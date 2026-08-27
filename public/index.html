@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>CRM рассылка — КИУ</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<!-- ============ БОКОВАЯ ПАНЕЛЬ ============ -->
+<div id="settingsPanel" class="settings-panel">
+  <div class="settings-panel-header">
+    <h3>Управление</h3>
+    <button class="btn-close-panel" id="settingsClose">&times;</button>
+    
+  </div>
+
+  <!-- Вкладки -->
+  <ul class="settings-tabs">
+    <li class="settings-tab active" data-tab="senders">Отправители</li>
+    <li class="settings-tab" data-tab="templates">Шаблоны</li>
+    <li class="settings-tab" data-tab="database">База данных</li>
+  </ul>
+
+  <!-- Содержимое вкладок -->
+  <div class="settings-content">
+    <!-- Вкладка Отправители -->
+    <div id="tab-senders" class="settings-tab-pane active">
+      <form id="senderForm" class="settings-form">
+        <input type="hidden" id="senderEditId">
+        <div class="form-group">
+          <label>Название</label>
+          <input type="text" id="senderName" class="form-control" placeholder="Моя почта" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="senderEmail" class="form-control" placeholder="your@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Хост (SMTP)</label>
+          <input type="text" id="senderHost" class="form-control" placeholder="smtp.gmail.com" required>
+        </div>
+        <div class="form-group">
+          <label>Порт</label>
+          <input type="number" id="senderPort" class="form-control" placeholder="465" required>
+        </div>
+        <div class="form-group">
+          <label>SSL/TLS</label>
+          <select id="senderSecure" class="form-control">
+            <option value="1">SSL (465)</option>
+            <option value="0">TLS (587)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Пароль приложения</label>
+          <input type="password" id="senderPassword" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-kiu" id="senderSubmitBtn">Добавить</button>
+        <button type="button" class="btn btn-cancel" id="senderCancelBtn" style="display:none;">Отмена</button>
+      </form>
+
+      <div id="senderList" class="settings-list">
+        <!-- список отправителей будет загружен сюда -->
+      </div>
+    </div>
+
+    <!-- Вкладка Шаблоны -->
+    <div id="tab-templates" class="settings-tab-pane">
+      <form id="templateForm" class="settings-form">
+        <input type="hidden" id="templateEditId">
+        <div class="form-group">
+          <label>Название шаблона</label>
+          <input type="text" id="templateName" class="form-control" placeholder="Приветствие" required>
+        </div>
+        <div class="form-group">
+          <label>Тема</label>
+          <input type="text" id="templateSubject" class="form-control" placeholder="Привет, {name}!" required>
+        </div>
+        <div class="form-group">
+          <label>Тело (HTML)</label>
+          <textarea id="templateBody" class="form-control" rows="5" placeholder="<h1>Здравствуйте, {name}!</h1>" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-kiu" id="templateSubmitBtn">Добавить</button>
+        <button type="button" class="btn btn-cancel" id="templateCancelBtn" style="display:none;">Отмена</button>
+      </form>
+
+      <div id="templateList" class="settings-list">
+        <!-- список шаблонов -->
+      </div>
+    </div>
+
+    <!-- Вкладка База данных -->
+<div id="tab-database" class="settings-tab-pane">
+  <h4 style="margin-top: 0;">Управление базой данных</h4>
+  <p class="text-muted" style="font-size: 13px;">
+    Здесь вы можете очистить все контакты и историю отправок.
+    Отправители и шаблоны останутся нетронутыми.
+  </p>
+
+  <div class="db-stats">
+    <div class="stat-item">
+      <span>Получателей</span>
+      <strong id="dbStatsRecipients">0</strong>
+    </div>
+    <div class="stat-item">
+      <span>Логов отправок</span>
+      <strong id="dbStatsLogs">0</strong>
+    </div>
+  </div>
+
+  <button class="btn btn-danger btn-clear-db" id="clearDatabaseBtn">
+    🗑️ Очистить всю базу (получатели + логи)
+  </button>
+  <p class="text-muted" style="font-size:11px; margin-top:6px;">
+    Это действие необратимо. Отправители и шаблоны останутся.
+  </p>
+</div>
+
+  </div>
+</div>
+
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ================= HEADER ================= -->
+
+  <header class="app-header">
+
+    <div class="header-brand">
+
+      <div class="brand-logo">
+        КИУ
+      </div>
+
+      <div>
+        <h1>CRM рассылка</h1>
+        <p>Управление получателями и email-рассылками</p>
+      </div>
+
+    </div>
+
+    <div class="header-status">
+      <span class="status-dot"></span>
+      Система работает
+    </div>
+
+    <button class="btn btn-settings" id="settingsToggle" title="Управление">
+      ⚙️
+    </button>
+  </header>
+
+
+  <!-- ================= SENDERS ================= -->
+
+  <section class="dashboard-card">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Отправитель</h2>
+        <p>Выберите почтовый аккаунт для рассылки</p>
+      </div>
+
+      <span class="section-number">01</span>
+
+    </div>
+
+    <div id="sendersContainer" class="senders-container"></div>
+
+  </section>
+
+
+  <!-- ================= IMPORT ================= -->
+
+  <section class="dashboard-card">
+
+    <div class="section-header">
+
+      <div>
+        <h2>База получателей</h2>
+        <p>Загрузите Excel-файл с контактами</p>
+      </div>
+
+      <span class="section-number">02</span>
+
+    </div>
+
+
+    <div class="import-area">
+
+      <div class="upload-box">
+
+        <div class="upload-icon">
+          ↑
+        </div>
+
+        <div class="upload-content">
+
+          <strong>Импорт контактов</strong>
+
+          <span>
+            Поддерживаются файлы XLS и XLSX
+          </span>
+
+          <div class="upload-controls">
+
+            <input
+              type="file"
+              id="excelFile"
+              accept=".xlsx,.xls"
+              class="form-control"
+            >
+
+            <button
+              class="btn btn-kiu"
+              id="uploadBtn"
+            >
+              Загрузить в базу
+            </button>
+
+            <span id="uploadStatus"></span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="database-info">
+
+        <div class="count-card">
+
+          <span>Контактов в базе</span>
+
+          <strong id="countLabel">
+            0
+          </strong>
+
+        </div>
+
+        <button
+          class="btn btn-clear"
+          id="clearHistoryBtn"
+        >
+          🗑 Очистить историю
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================= FILTERS ================= -->
+
+  <section class="dashboard-card">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Получатели</h2>
+        <p>Фильтрация и выбор контактов для рассылки</p>
+      </div>
+
+      <span class="section-number">03</span>
+
+    </div>
+
+
+    <div class="filters-grid">
+
+      <div class="filter-group">
+
+        <label for="filterCity">
+          Город
+        </label>
+
+        <select
+          id="filterCity"
+          class="form-select"
+        >
+          <option value="">
+            Все города
+          </option>
+        </select>
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="filterSpec">
+          Специализация
+        </label>
+
+        <select
+          id="filterSpec"
+          class="form-select"
+        >
+          <option value="">
+            Все специализации
+          </option>
+        </select>
+
+      </div>
+      <div class="filter-group">
+        <label for="filterOrg">Организация</label>
+          <select id="filterOrg" class="form-select">
+          <option value="">Все организации</option>
+        </select>
+        </div>
+
+      <div class="filter-group search-group">
+
+        <label for="searchInput">
+          Поиск
+        </label>
+
+        <input
+          type="text"
+          id="searchInput"
+          class="form-control"
+          placeholder="Поиск по email или имени"
+        >
+
+      </div>
+
+    </div>
+
+
+    <!-- Selection controls -->
+
+    <div class="selection-toolbar">
+
+      <label class="select-all-label">
+
+        <input
+          type="checkbox"
+          id="selectAll"
+        >
+
+        <span>
+          Выбрать всех
+        </span>
+
+      </label>
+
+
+      <div class="selection-divider"></div>
+
+
+      <button
+        class="selection-btn"
+        id="select10"
+      >
+        Выбрать 10
+      </button>
+
+      <button
+        class="selection-btn"
+        id="select20"
+      >
+        Выбрать 20
+      </button>
+
+      <button
+        class="selection-btn"
+        id="select30"
+      >
+        Выбрать 30
+      </button>
+
+
+      <div class="available-count">
+
+        Доступно:
+
+        <strong id="availableCount">
+          0
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <!-- ================= TABLE ================= -->
+
+    <div class="table-wrapper">
+
+      <table class="table recipients-table">
+
+        <thead>
+  <tr>
+    <th><input type="checkbox" id="selectAll"></th>
+    <th>Email</th>
+    <th>Имя</th>
+    <th>Телефон</th>
+    <th>Город</th>
+    <th>Организация</th>
+    <th>Специализация</th>
+    <th>Комментарий</th>          <!-- НОВОЕ -->
+    <th>Последняя отправка</th>
+  </tr>
+</thead>
+
+        <tbody id="recipientsTable"></tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================= EMAIL ================= -->
+
+  <section class="dashboard-card">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Новая рассылка</h2>
+        <p>Создайте письмо и отправьте выбранным получателям</p>
+      </div>
+
+      <span class="section-number">04</span>
+
+    </div>
+
+
+    <div class="email-form">
+
+      <div class="form-group">
+
+        <label for="subjectInput">
+          Тема письма
+        </label>
+
+        <input
+          type="text"
+          id="subjectInput"
+          class="form-control"
+          placeholder="Введите тему письма"
+        >
+
+      </div>
+
+
+      <div class="form-group template-group">
+
+        <label for="templateSelect">
+          Шаблон письма
+        </label>
+
+        <select
+          id="templateSelect"
+          class="form-select"
+        >
+
+          <option value="">
+            -- Ручной ввод --
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="bodyInput">
+          Тело письма
+        </label>
+
+        <textarea
+          id="bodyInput"
+          class="form-control email-body"
+          rows="8"
+          placeholder="Тело письма (HTML). Используйте {email}, {name}, {city}, {specialization}"
+        ></textarea>
+
+        <div class="textarea-hint">
+          Доступные переменные:
+          <code>{email}</code>
+          <code>{name}</code>
+          <code>{city}</code>
+          <code>{specialization}</code>
+        </div>
+
+      </div>
+
+
+      <div class="email-actions">
+          <div class="form-check me-3">
+        <input type="checkbox" class="form-check-input" id="ignoreDuplicate">
+        <label class="form-check-label" for="ignoreDuplicate">
+          Разрешить повторную отправку (игнорировать дубликаты)
+        </label>
+      </div>
+        <button
+          class="btn btn-send"
+          id="sendBtn"
+        >
+          📨 Отправить выбранным
+        </button>
+
+        <button
+          class="btn btn-stop"
+          id="stopBtn"
+          style="display:none;"
+        >
+          ⏹ Остановить
+        </button>
+
+        <span id="sendStatus"></span>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================= PROGRESS ================= -->
+
+  <section class="dashboard-card progress-card">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Прогресс рассылки</h2>
+        <p>Журнал выполнения операций</p>
+      </div>
+
+      <span class="section-number">05</span>
+
+    </div>
+
+
+    <div
+      id="progressLog"
+      class="progress-log"
+    ></div>
+
+  </section>
+
+
+  <!-- ================= FOOTER ================= -->
+
+  <footer class="app-footer">
+
+    <span>
+      CRM рассылка
+    </span>
+
+    <span>
+      КИУ • 2026
+    </span>
+
+  </footer>
+
+</div>
+
+
+<script src="/js/app.js"></script>
+
+</body>
+</html>
