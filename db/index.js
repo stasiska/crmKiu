@@ -1,13 +1,14 @@
 const { Pool } = require('pg');
 const { runMigrations } = require('./migrations');
+const  config  = require('../config');
 
 // --- Конфигурация ---
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'crm_db',
+  host: config.db.host,
+  port: config.db.port,
+  user: config.db.user,
+  password: config.db.password,
+  database: config.db.database,
   max: 20,
   idleTimeoutMillis: 30000,
 });
