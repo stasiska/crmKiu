@@ -62,8 +62,8 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: crm_frontend
-    restart: always
     runtime: runc
+    restart: always
     ports:
       - "8080:80"
     depends_on:
