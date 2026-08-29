@@ -140,10 +140,10 @@ async function runMigrations(pool) {
 
 
         await client.query('COMMIT');
-        console.log('✅ Таблицы созданы/проверены, администратор создан');
+        //console.log('✅ Таблицы созданы/проверены, администратор создан');
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('❌ Ошибка миграции:', err);
+        //console.error('❌ Ошибка миграции:', err);
         throw err;
     } finally {
         client.release();

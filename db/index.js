@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const { runMigrations } = require('./migrations');
-const  config  = require('../config');
+const config = require('../config');
 
 // --- Конфигурация ---
 const pool = new Pool({
@@ -29,6 +29,13 @@ async function query(text, params) {
   }
 }
 
+// ---- Вспомогательные белые списки для обновлений ----
+const ALLOWED_SENDER_FIELDS = ['name', 'email', 'host', 'port', 'secure', 'password'];
+const ALLOWED_TEMPLATE_FIELDS = ['name', 'subject', 'body'];
+const ALLOWED_REMINDER_FIELDS = ['reminder_date', 'message', 'is_completed'];
+const ALLOWED_TASK_FIELDS = ['title', 'description', 'status', 'assigned_to', 'deadline'];
+const ALLOWED_USER_FIELDS = ['name', 'role', 'password_hash']; // при необходимости можно добавить 'email'
+
 // ---- Senders ----
 
 async function getSenders(userId) {
@@ -52,14 +59,20 @@ async function addSender(sender, userId) {
 }
 
 async function updateSender(id, userId, updates) {
+  // Фильтруем только разрешённые поля
+  const filtered = Object.keys(updates)
+    .filter(key => ALLOWED_SENDER_FIELDS.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+  
   const fields = [];
   const values = [];
   let idx = 1;
-  for (const [key, val] of Object.entries(updates)) {
+  for (const [key, val] of Object.entries(filtered)) {
     fields.push(`${key} = $${idx}`);
     values.push(val);
     idx++;
   }
+  if (fields.length === 0) return false;
   values.push(id, userId);
   const sql = `UPDATE senders SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx+1}`;
   const res = await query(sql, values);
@@ -97,7 +110,7 @@ async function getRecipients(filters = {}) {
     values.push(`%${filters.search}%`);
     idx++;
   }
-  sql += ' ORDER BY imported_at DESC'; // добавлено
+  sql += ' ORDER BY imported_at DESC';
   const res = await query(sql, values);
   return res.rows;
 }
@@ -106,8 +119,6 @@ async function addRecipients(rows) {
   const inserted = [];
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    if (i === 0) {
-    }
     const email = row.email || row['e-mail'] || row['почта'] || '';
     if (!email) continue;
 
@@ -208,10 +219,12 @@ async function clearLogs() {
 // ---- Статистика ----
 
 async function getRecentCount(senderId, windowSeconds) {
+  // Используем параметризованный запрос для интервала
   const res = await query(
     `SELECT COUNT(*) as count FROM send_logs
-     WHERE sender_id = $1 AND status = 'sent' AND sent_at > NOW() - INTERVAL '${windowSeconds} seconds'`,
-    [senderId]
+     WHERE sender_id = $1 AND status = 'sent'
+     AND sent_at > NOW() - INTERVAL '1 second' * $2`,
+    [senderId, windowSeconds]
   );
   return parseInt(res.rows[0].count);
 }
@@ -226,10 +239,12 @@ async function getDailyCount(senderId) {
 }
 
 async function checkDuplicate(email, days) {
+  // Используем параметризованный запрос
   const res = await query(
     `SELECT COUNT(*) as count FROM send_logs
-     WHERE recipient_email = $1 AND status = 'sent' AND sent_at > NOW() - INTERVAL '${days} days'`,
-    [email]
+     WHERE recipient_email = $1 AND status = 'sent'
+     AND sent_at > NOW() - INTERVAL '1 day' * $2`,
+    [email, days]
   );
   return parseInt(res.rows[0].count) > 0;
 }
@@ -266,14 +281,19 @@ async function addTemplate(template) {
 }
 
 async function updateTemplate(id, updates) {
+  const filtered = Object.keys(updates)
+    .filter(key => ALLOWED_TEMPLATE_FIELDS.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+  
   const fields = [];
   const values = [];
   let idx = 1;
-  for (const [key, val] of Object.entries(updates)) {
+  for (const [key, val] of Object.entries(filtered)) {
     fields.push(`${key} = $${idx}`);
     values.push(val);
     idx++;
   }
+  if (fields.length === 0) return false;
   values.push(id);
   const sql = `UPDATE templates SET ${fields.join(', ')} WHERE id = $${idx}`;
   const res = await query(sql, values);
@@ -309,6 +329,31 @@ async function createUser(user) {
 async function getAllUsers() {
   const res = await query('SELECT id, email, name, role FROM users');
   return res.rows;
+}
+
+async function updateUser(id, updates) {
+  const filtered = Object.keys(updates)
+    .filter(key => ALLOWED_USER_FIELDS.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+  
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  for (const [key, val] of Object.entries(filtered)) {
+    fields.push(`${key} = $${idx}`);
+    values.push(val);
+    idx++;
+  }
+  if (fields.length === 0) return false;
+  values.push(id);
+  const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}`;
+  const res = await query(sql, values);
+  return res.rowCount > 0;
+}
+
+async function deleteUser(id) {
+  const res = await query('DELETE FROM users WHERE id = $1', [id]);
+  return res.rowCount > 0;
 }
 
 // ---- Reminders ----
@@ -351,22 +396,16 @@ async function getReminder(id) {
 }
 
 async function updateReminder(id, updates) {
+  const filtered = Object.keys(updates)
+    .filter(key => ALLOWED_REMINDER_FIELDS.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+  
   const fields = [];
   const values = [];
   let idx = 1;
-  if (updates.reminderDate !== undefined) {
-    fields.push(`reminder_date = $${idx}`);
-    values.push(updates.reminderDate);
-    idx++;
-  }
-  if (updates.message !== undefined) {
-    fields.push(`message = $${idx}`);
-    values.push(updates.message);
-    idx++;
-  }
-  if (updates.isCompleted !== undefined) {
-    fields.push(`is_completed = $${idx}`);
-    values.push(updates.isCompleted);
+  for (const [key, val] of Object.entries(filtered)) {
+    fields.push(`${key} = $${idx}`);
+    values.push(val);
     idx++;
   }
   if (fields.length === 0) return false;
@@ -471,32 +510,16 @@ async function getDueRemindersCount(userId) {
 }
 
 async function updateTask(id, userId, updates) {
+  const filtered = Object.keys(updates)
+    .filter(key => ALLOWED_TASK_FIELDS.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+  
   const fields = [];
   const values = [];
   let idx = 1;
-  if (updates.title !== undefined) {
-    fields.push(`title = $${idx}`);
-    values.push(updates.title);
-    idx++;
-  }
-  if (updates.description !== undefined) {
-    fields.push(`description = $${idx}`);
-    values.push(updates.description);
-    idx++;
-  }
-  if (updates.status !== undefined) {
-    fields.push(`status = $${idx}`);
-    values.push(updates.status);
-    idx++;
-  }
-  if (updates.assignedTo !== undefined) {
-    fields.push(`assigned_to = $${idx}`);
-    values.push(updates.assignedTo);
-    idx++;
-  }
-  if (updates.deadline !== undefined) {
-    fields.push(`deadline = $${idx}`);
-    values.push(updates.deadline);
+  for (const [key, val] of Object.entries(filtered)) {
+    fields.push(`${key} = $${idx}`);
+    values.push(val);
     idx++;
   }
   if (fields.length === 0) return false;
@@ -519,7 +542,6 @@ async function clearDatabase() {
   await query('DELETE FROM recipients');
   return true;
 }
-
 
 // ---- Comments ----
 async function getComments(recipientId) {
@@ -551,42 +573,21 @@ async function updateRecipientLastComment(recipientId, comment) {
   return res.rowCount > 0;
 }
 
-// ---- Users ----
-async function updateUser(id, updates) {
-  const fields = [];
-  const values = [];
-  let idx = 1;
-  for (const [key, val] of Object.entries(updates)) {
-    fields.push(`${key} = $${idx}`);
-    values.push(val);
-    idx++;
-  }
-  if (fields.length === 0) return false;
-  values.push(id);
-  const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}`;
-  const res = await query(sql, values);
-  return res.rowCount > 0;
-}
-
-async function deleteUser(id) {
-  const res = await query('DELETE FROM users WHERE id = $1', [id]);
-  return res.rowCount > 0;
-}
 // ---- Экспорт объекта с методами ----
 
 module.exports = {
-  //commets
+  // Comments
   getComments,
-  deleteUser,
   addComment,
   updateRecipientLastComment,
+
   // Senders
   getSenders,
   getSender,
-  updateUser,
   addSender,
   updateSender,
   deleteSender,
+
   // Recipients
   getRecipients,
   addRecipients,
@@ -595,8 +596,8 @@ module.exports = {
   getDistinctSpecializations,
   getDistinctOrganizations,
   countRecipients,
-  getDueRemindersCount,
   updateRecipientComment,
+
   // Logs
   addLog,
   getLogs,
@@ -605,17 +606,22 @@ module.exports = {
   getDailyCount,
   checkDuplicate,
   getLastSentDate,
+
   // Templates
   getTemplates,
   getTemplate,
   addTemplate,
   updateTemplate,
   deleteTemplate,
+
   // Users
   getUserByEmail,
   getUserById,
   createUser,
   getAllUsers,
+  updateUser,
+  deleteUser,
+
   // Reminders
   createReminder,
   getReminders,
@@ -623,18 +629,22 @@ module.exports = {
   updateReminder,
   deleteReminder,
   getDueReminders,
+  getDueRemindersCount,
+
   // Tasks
   getTasks,
   getTask,
   addTask,
   updateTask,
+  deleteTask,
+
+  // Notifications
   addNotification,
   getNotifications,
   getUnreadNotificationCount,
   markNotificationAsRead,
-  deleteTask,
+
   // Utils
   clearDatabase,
-  // Direct pool (if needed)
   pool,
 };

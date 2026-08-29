@@ -358,7 +358,7 @@ function connectSSE() {
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      console.log('SSE событие:', data);
+      //console.log('SSE событие:', data);
 
       if (data.status === 'done') {
         let msg = `✅ Готово! Отправлено: ${data.sentCount}, ошибок: ${data.errorCount}`;

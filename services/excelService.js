@@ -14,7 +14,7 @@ function parseExcel(fileBuffer) {
     }
     // Логируем первую строку для отладки
     if (rows.indexOf(row) === 0) {
-      console.log('📄 Первая строка Excel после нормализации:', newRow);
+      //console.log('📄 Первая строка Excel после нормализации:', newRow);
     }
     return newRow;
   });

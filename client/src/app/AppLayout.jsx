@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 
 import Sidebar from "../widgets/Sidebar/Sidebar";
 import Header from "../widgets/Header/Header";
+import Footer from "../widgets/Footer/Footer";
 
 function AppLayout() {
   return (
@@ -14,6 +15,8 @@ function AppLayout() {
         <main className="app-layout__main">
           <Outlet />
         </main>
+
+        <Footer/>
       </div>
     </div>
   );

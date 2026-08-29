@@ -4,15 +4,32 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const db = require('../db');
 
+const {
+  validate,
+  loginSchema,
+  senderSchema,
+  updateSenderSchema,
+  commentSchema,
+  templateSchema,
+  updateTemplateSchema,
+  createUserSchema,
+  updateUserSchema,
+  reminderSchema,
+  updateReminderSchema,
+  taskSchema,
+  updateTaskSchema,
+} = require('../validators');
+
 const recipientCtrl = require('../controllers/recipientController');
 const senderCtrl = require('../controllers/senderController');
 const logCtrl = require('../controllers/logController');
 const sendCtrl = require('../controllers/sendController');
 const { canSend } = require('../services/rateLimiter');
 const { login, verifyToken } = require('../services/authService');
-const { authMiddleware, checkRole, isAdmin, isManagerOrAdmin } = require('../middleware/auth');
+const { authMiddleware, isAdmin } = require('../middleware/auth');
+
 // ---- Публичные маршруты ----
-router.post('/auth/login', async (req, res) => {
+router.post('/auth/login', validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await login(email, password);
@@ -56,12 +73,12 @@ router.get('/recipients/count', recipientCtrl.countRecipients);
 
 // ---- Отправители ----
 router.get('/senders', senderCtrl.getAllSenders);
-router.post('/senders', senderCtrl.createSender);
+router.post('/senders', validate(senderSchema), senderCtrl.createSender);
 router.get('/senders/:id', senderCtrl.getSender);
-router.put('/senders/:id', senderCtrl.updateSender);
+router.put('/senders/:id', validate(updateSenderSchema), senderCtrl.updateSender);
 router.delete('/senders/:id', senderCtrl.deleteSender);
 
-// ---- Статистика отправителя (если используется) ----
+// ---- Статистика отправителя ----
 router.get('/senders/:id/stats', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -141,10 +158,10 @@ emailService.on('done', emitProgress);
 
 // ---- Шаблоны ----
 const templateCtrl = require('../controllers/templateController');
-router.get('/templates',  templateCtrl.getTemplates);
+router.get('/templates', templateCtrl.getTemplates);
 router.get('/templates/:id', templateCtrl.getTemplate);
-router.post('/templates', isAdmin, templateCtrl.addTemplate);
-router.put('/templates/:id', isAdmin, templateCtrl.updateTemplate);
+router.post('/templates', validate(templateSchema), isAdmin, templateCtrl.addTemplate);
+router.put('/templates/:id', validate(updateTemplateSchema), isAdmin, templateCtrl.updateTemplate);
 router.delete('/templates/:id', isAdmin, templateCtrl.deleteTemplate);
 
 // ---- Очистка базы ----
@@ -157,8 +174,8 @@ router.delete('/clear-database', isAdmin, async (req, res) => {
   }
 });
 
-// ---- Комментарий ----
-router.put('/recipients/:id/comment', async (req, res) => {
+// ---- Комментарий (обновление в recipients) ----
+router.put('/recipients/:id/comment', validate(commentSchema), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { comment } = req.body;
@@ -173,38 +190,37 @@ router.put('/recipients/:id/comment', async (req, res) => {
 // ---- Напоминания ----
 const reminderCtrl = require('../controllers/reminderController');
 router.get('/reminders/due-count', reminderCtrl.getDueCount);
-router.post('/reminders', reminderCtrl.createReminder);
+router.post('/reminders', validate(reminderSchema), reminderCtrl.createReminder);
 router.get('/reminders', reminderCtrl.getReminders);
 router.get('/reminders/:id', reminderCtrl.getReminder);
-router.put('/reminders/:id', reminderCtrl.updateReminder);
+router.put('/reminders/:id', validate(updateReminderSchema), reminderCtrl.updateReminder);
 router.delete('/reminders/:id', reminderCtrl.deleteReminder);
 
 // ---- Задачи (Tasks) ----
 const taskCtrl = require('../controllers/taskController');
 router.get('/tasks', taskCtrl.getTasks);
 router.get('/tasks/:id', taskCtrl.getTask);
-router.post('/tasks', taskCtrl.createTask);
-router.put('/tasks/:id', taskCtrl.updateTask);
+router.post('/tasks', validate(taskSchema), taskCtrl.createTask);
+router.put('/tasks/:id', validate(updateTaskSchema), taskCtrl.updateTask);
 router.delete('/tasks/:id', taskCtrl.deleteTask);
 
-// ---- Пользователи (для выбора ответственного) ----
+// ---- Пользователи ----
 const userCtrl = require('../controllers/userController');
 router.get('/users', userCtrl.getUsers);
-router.post('/users', isAdmin, userCtrl.createUser);
-router.put('/users/:id', isAdmin, userCtrl.updateUser);
+router.post('/users', validate(createUserSchema), isAdmin, userCtrl.createUser);
+router.put('/users/:id', validate(updateUserSchema), isAdmin, userCtrl.updateUser);
 router.delete('/users/:id', isAdmin, userCtrl.deleteUser);
 
+// ---- Уведомления ----
 const notificationCtrl = require('../controllers/notificationController');
-
 router.get('/notifications', notificationCtrl.getNotifications);
 router.get('/notifications/unread-count', notificationCtrl.getUnreadCount);
 router.put('/notifications/:id/read', notificationCtrl.markAsRead);
-
 router.get('/unread-total', notificationCtrl.getUnreadTotal);
 
+// ---- Комментарии (история) ----
 const commentCtrl = require('../controllers/commentController');
-
 router.get('/recipients/:recipientId/comments', commentCtrl.getComments);
-router.post('/recipients/:recipientId/comments', commentCtrl.addComment);
+router.post('/recipients/:recipientId/comments', validate(commentSchema), commentCtrl.addComment);
 
 module.exports = router;

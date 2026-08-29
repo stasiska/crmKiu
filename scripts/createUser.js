@@ -8,10 +8,10 @@ const role = 'admin';
 
 const existing = db.getUserByEmail(email);
 if (existing) {
-  console.log('Пользователь уже существует');
+  //console.log('Пользователь уже существует');
   process.exit(0);
 }
 
 const passwordHash = bcrypt.hashSync(password, 10);
 db.createUser({ email, passwordHash, name, role });
-console.log(`✅ Пользователь ${email} создан с ролью ${role}`);
+//console.log(`✅ Пользователь ${email} создан с ролью ${role}`);

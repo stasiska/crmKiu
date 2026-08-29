@@ -2,7 +2,7 @@ const db = require('../db');
 const config = require('../config');
 
 async function getRecentCount(senderId) {
-  const windowSeconds = config.rateLimitWindow / 1000;
+  const windowSeconds = config.rateLimit.windowMs / 1000;
   return await db.getRecentCount(senderId, windowSeconds);
 }
 

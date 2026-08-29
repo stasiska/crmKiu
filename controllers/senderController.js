@@ -5,8 +5,7 @@ async function getAllSenders(req, res) {
   try {
     const userId = req.user.id;
     const senders = await db.getSenders(userId);
-    const windowSeconds = config.rateLimitWindow / 1000;
-    const result = await Promise.all(senders.map(async (s) => {
+const windowSeconds = config.rateLimit.windowMs / 1000;    const result = await Promise.all(senders.map(async (s) => {
       const daily = await db.getDailyCount(s.id);
       const recent = await db.getRecentCount(s.id, windowSeconds);
       const allowed = !(recent >= config.rateLimitCount || daily >= config.maxDailySent);

@@ -88,7 +88,7 @@ const UsersManager = () => {
     }
   };
 
-  const roles = ['user', 'manager', 'admin'];
+  const roles = ['user', 'manager', 'director', 'admin'];
 
   return (
     <div>

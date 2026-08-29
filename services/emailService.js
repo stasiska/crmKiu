@@ -25,7 +25,7 @@ class EmailService extends EventEmitter {
     this.isSending = true;
     this.shouldStop = false;
 
-    console.log(`🚀 Отправка для пользователя ${userId}, получателей: ${recipients.length}`);
+    //console.log(`🚀 Отправка для пользователя ${userId}, получателей: ${recipients.length}`);
 
     const sender = await db.getSender(senderId, userId);
     if (!sender) {
@@ -42,7 +42,7 @@ class EmailService extends EventEmitter {
 
     try {
       await transporter.verify();
-      console.log('✅ SMTP соединение успешно');
+      //console.log('✅ SMTP соединение успешно');
     } catch (err) {
       console.error('❌ Ошибка SMTP соединения:', err.message);
       throw new Error(`SMTP соединение не удалось: ${err.message}`);
@@ -54,7 +54,7 @@ class EmailService extends EventEmitter {
     let sentCount = 0;
     let errorCount = 0;
     const total = recipients.length;
-    const windowSeconds = config.rateLimitWindow / 1000;
+    const windowSeconds = config.rateLimit.windowMs / 1000;
 
     for (let i = 0; i < total; i++) {
       if (this.shouldStop) break;
