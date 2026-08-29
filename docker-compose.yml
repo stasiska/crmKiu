@@ -5,6 +5,7 @@ services:
     image: postgres:15
     container_name: crmkiu
     restart: always
+    runtime: runc
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -28,6 +29,7 @@ services:
       dockerfile: Dockerfile.backend
     container_name: crm_backend
     restart: always
+    runtime: runc
     environment:
       NODE_ENV: ${NODE_ENV}
       PORT: ${PORT}
@@ -61,6 +63,7 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: crm_frontend
     restart: always
+    runtime: runc
     ports:
       - "8080:80"
     depends_on:
