@@ -1,0 +1,145 @@
+# CRM Рассылка (КИУ)
+
+Система для управления email-рассылками, контактами, задачами и уведомлениями.  
+Разработана для внутренних нужд Казанского инновационного университета.
+
+---
+
+## 📌 Оглавление
+
+- [🧰 Стек технологий](#-стек-технологий)
+- [⚙️ Требования к серверу](#️-требования-к-серверу)
+- [🚀 Быстрый запуск (на новом VPS)](#-быстрый-запуск-на-новом-vps)
+- [🌐 Настройка домена и SSL](#-настройка-домена-и-ssl-рекомендуется)
+- [🧰 Полезные команды](#-полезные-команды)
+- [🐛 Возможные проблемы и их решение](#-возможные-проблемы-и-их-решение)
+- [📁 Структура проекта](#-структура-проекта-основные-папки)
+- [📌 Дополнительно](#-дополнительно)
+- [🛠️ Разработка](#️-разработка)
+- [📄 Лицензия](#-лицензия)
+- [🤝 Контакты](#-контакты)
+
+---
+
+## 🧰 Стек технологий
+
+| Компонент | Технология |
+|-----------|------------|
+| **Бэкенд** | Node.js + Express |
+| **База данных** | PostgreSQL |
+| **Фронтенд** | React + Vite |
+| **Контейнеризация** | Docker + Docker Compose |
+| **Прокси / SSL** | Nginx + Certbot (Let's Encrypt) |
+| **Сборка** | pkg (опционально) |
+
+---
+
+## ⚙️ Требования к серверу
+
+- Ubuntu 22.04 / 24.04 (или аналогичный Debian-дистрибутив)
+- Docker (20.10+) и Docker Compose V2
+- Git
+- Домен (опционально, но рекомендуется)
+- Открытые порты: 80, 443, 22 (SSH), 5432 (опционально)
+
+---
+
+## 🚀 Быстрый запуск (на новом VPS)
+
+### 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/stasiska/crmKiu.git
+cd crmKiu
+```
+
+### 2. Настройка переменных окружения
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+## Минимально необходимые параметры:
+## env
+- DB_PASSWORD=ваш_надёжный_пароль
+- JWT_SECRET=случайная_длинная_строка
+- CORS_ORIGIN=https://ваш-домен.ru   # или http://IP, если без домена
+
+### 3. Запуск контейнеров (первый запуск)
+
+```bash
+docker compose up -d --build
+```
+
+## Примечание: backend может упасть при первом запуске, потому что база данных ещё пуста. Это нормально.
+### 4. Импорт дампа базы данных (если есть)
+# Скопируйте дамп в контейнер:
+```bash
+docker cp dump.sql crmkiu:/dump.sql
+```
+Импортируйте:
+
+```bash
+docker exec -i crmkiu psql -U postgres -d crmkiu -f /dump.sql
+```
+
+Проверьте, что таблицы создались:
+```bash
+docker exec -i crmkiu psql -U postgres -d crmkiu -c "\dt"
+```
+### 5. Перезапуск backend
+```bash
+docker compose restart backend
+```
+### 🌐 Настройка домена и SSL (рекомендуется)
+## 1. Измените проброс порта для фронтенда в docker-compose.yml
+# YAMLfrontend:
+  ports:
+    - "127.0.0.1:8080:80"
+- Перезапустите фронтенд:
+```bash
+docker compose up -d --build frontend
+```
+## 2. Установите Nginx на хост-машину
+```bash
+sudo apt update
+sudo apt install nginx -y
+```
+## 3. Создайте конфигурацию Nginx для вашего домена
+# Создайте файл /etc/nginx/sites-available/ваш-домен:
+```bash
+
+nginxserver {
+    listen 80;
+    server_name ваш-домен.ru www.ваш-домен.ru;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:3000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+Активируйте конфигурацию:
+```bash
+sudo ln -s /etc/nginx/sites-available/ваш-домен /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+### 4. Настройка SSL (Let's Encrypt)
+```bash
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d ваш-домен.ru -d www.ваш-домен.ru
+```
+### Следуйте инструкциям. Сертификаты будут обновляться автоматически.
