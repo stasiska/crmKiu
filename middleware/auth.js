@@ -6,8 +6,9 @@ function authMiddleware(req, res, next) {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
   }
-  if (!token && req.query && req.query.token) {
-    token = req.query.token;
+  // Если нет в заголовке, пробуем из cookie
+  if (!token && req.cookies) {
+    token = req.cookies.token;
   }
 
   if (!token) {

@@ -3,25 +3,35 @@ import {
   fetchSenders,
   fetchRecipients,
   fetchFiltersOptions,
-  fetchOrganizations,
+  fetchRecipientOrganizations,  // переименовано
+  fetchOrganizations,           // для новой таблицы
+  fetchListeners,               // для слушателей
   fetchTemplates,
   fetchTemplate,
   sendEmails,
   stopSending,
   clearLogs,
   updateRecipientComment,
+  fetchUsers,
+  fetchGroups,
 } from '../api';
 
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  // состояния
+  // ... внутри AppProvider
+  const [groups, setGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState(null);
+  const [groupsPagination, setGroupsPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  // ===== Состояния для рассылки =====
   const [senders, setSenders] = useState([]);
   const [selectedSenderId, setSelectedSenderId] = useState(null);
   const [recipients, setRecipients] = useState([]);
   const [filters, setFilters] = useState({ city: '', specialization: '', organization: '', search: '' });
   const [filtersOptions, setFiltersOptions] = useState({ cities: [], specializations: [] });
-  const [organizations, setOrganizations] = useState([]);
+  const [recipientOrganizations, setRecipientOrganizations] = useState([]); // переименовано
   const [selectedRecipientIds, setSelectedRecipientIds] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [progressLogs, setProgressLogs] = useState([]);
@@ -35,9 +45,24 @@ export const AppProvider = ({ children }) => {
   const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
   const [sendError, setSendError] = useState(null);
 
+  // ===== Новые состояния для организаций (таблица) =====
+  const [orgs, setOrgs] = useState([]);
+  const [orgsLoading, setOrgsLoading] = useState(false);
+  const [orgsError, setOrgsError] = useState(null);
+  const [orgsPagination, setOrgsPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  // ===== Новые состояния для слушателей =====
+  const [listeners, setListeners] = useState([]);
+  const [listenersLoading, setListenersLoading] = useState(false);
+  const [listenersError, setListenersError] = useState(null);
+  const [listenersPagination, setListenersPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  // ===== Состояния для пользователей (нужны в модальных окнах) =====
+  const [users, setUsers] = useState([]);
+
   const eventSourceRef = useRef(null);
 
-  // загрузка отправителей
+  // ===== Загрузка отправителей =====
   const loadSenders = useCallback(async () => {
     setLoading(true);
     try {
@@ -55,7 +80,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [selectedSenderId]);
 
-  // загрузка получателей с фильтрами
+  // ===== Загрузка получателей с фильтрами =====
   const loadRecipients = useCallback(async () => {
     setLoading(true);
     try {
@@ -68,7 +93,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [filters]);
 
-  // загрузка фильтров (города, специализации)
+  // ===== Загрузка фильтров (города, специализации) =====
   const loadFiltersOptions = useCallback(async () => {
     try {
       const data = await fetchFiltersOptions();
@@ -78,17 +103,17 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // загрузка организаций
-  const loadOrganizations = useCallback(async () => {
+  // ===== Загрузка организаций для получателей (старый метод) =====
+  const loadRecipientOrganizations = useCallback(async () => {
     try {
-      const data = await fetchOrganizations();
-      setOrganizations(data);
+      const data = await fetchRecipientOrganizations();
+      setRecipientOrganizations(data);
     } catch (e) {
-      console.error('Ошибка загрузки организаций:', e);
+      console.error('Ошибка загрузки организаций для получателей:', e);
     }
   }, []);
 
-  // загрузка шаблонов
+  // ===== Загрузка шаблонов =====
   const loadTemplates = useCallback(async () => {
     try {
       const data = await fetchTemplates();
@@ -98,9 +123,8 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // применение шаблона
+  // ===== Применение шаблона =====
   const applyTemplate = useCallback(async (templateId) => {
-    console.log('applyTemplate вызван с id:', templateId);
     if (!templateId) {
       setSubject('');
       setBody('');
@@ -108,7 +132,6 @@ export const AppProvider = ({ children }) => {
     }
     try {
       const template = await fetchTemplate(templateId);
-      console.log('Шаблон получен:', template);
       setSubject(template.subject || '');
       setBody(template.body || '');
     } catch (e) {
@@ -116,13 +139,12 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // SSE для прогресса
+  // ===== SSE для прогресса =====
   const connectProgressSSE = useCallback(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
-    const token = localStorage.getItem('token');
-    const eventSource = new EventSource(`/api/send/progress?token=${token}`);
+    const eventSource = new EventSource('/api/send/progress');
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
@@ -132,7 +154,6 @@ export const AppProvider = ({ children }) => {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('SSE:', data);
         if (data.status === 'done') {
           const msg = `Отправка завершена. Успешно: ${data.sentCount}, ошибок: ${data.errorCount}`;
           setProgressLogs(prev => [...prev, { type: 'done', message: msg }]);
@@ -169,7 +190,7 @@ export const AppProvider = ({ children }) => {
     };
   }, [isSending, loadRecipients, loadSenders]);
 
-  // отправка
+  // ===== Отправка писем =====
   const handleSend = useCallback(async () => {
     if (!selectedSenderId) { alert('Выберите отправителя'); return; }
     if (!selectedRecipientIds.length) { alert('Выберите получателей'); return; }
@@ -237,12 +258,80 @@ export const AppProvider = ({ children }) => {
     }
   }, [loadRecipients]);
 
-  // первоначальная загрузка
+  // ===== Новые методы: загрузка организаций (таблица) =====
+  const loadOrgs = useCallback(async (filters = {}) => {
+    setOrgsLoading(true);
+    try {
+      const params = { page: filters.page || 1, limit: filters.limit || 20 };
+      if (filters.search) params.search = filters.search;
+      const res = await fetchOrganizations(params);
+      setOrgs(res.data);
+      setOrgsPagination({ page: res.page, limit: res.limit, total: res.total });
+      setOrgsError(null);
+    } catch (err) {
+      setOrgsError(err.message);
+    } finally {
+      setOrgsLoading(false);
+    }
+  }, []);
+
+  // ===== Новые методы: загрузка слушателей =====
+  const loadListeners = useCallback(async (filters = {}) => {
+    setListenersLoading(true);
+    try {
+      const params = { page: filters.page || 1, limit: filters.limit || 20 };
+      if (filters.search) params.search = filters.search;
+      if (filters.organization_id) params.organization_id = filters.organization_id;
+      if (filters.gender) params.gender = filters.gender;
+      if (filters.education_level) params.education_level = filters.education_level;
+      const res = await fetchListeners(params);
+      setListeners(res.data);
+      setListenersPagination({ page: res.page, limit: res.limit, total: res.total });
+      setListenersError(null);
+    } catch (err) {
+      setListenersError(err.message);
+    } finally {
+      setListenersLoading(false);
+    }
+  }, []);
+
+  // ===== Загрузка групп =====
+  const loadGroups = useCallback(async (filters = {}) => {
+    setGroupsLoading(true);
+    try {
+      const params = { page: filters.page || 1, limit: filters.limit || 20 };
+      if (filters.search) params.search = filters.search;
+      if (filters.manager_id) params.manager_id = filters.manager_id;
+      if (filters.status) params.status = filters.status;
+      if (filters.hours_min) params.hours_min = filters.hours_min;
+      if (filters.hours_max) params.hours_max = filters.hours_max;
+      const res = await fetchGroups(params);
+      setGroups(res.data || []);
+      setGroupsPagination({ page: res.page, limit: res.limit, total: res.total });
+      setGroupsError(null);
+    } catch (err) {
+      setGroupsError(err.message);
+    } finally {
+      setGroupsLoading(false);
+    }
+  }, []);
+  // ===== Загрузка пользователей =====
+  const loadUsers = useCallback(async () => {
+    try {
+      const data = await fetchUsers();
+      setUsers(data);
+    } catch (err) {
+      console.error('Ошибка загрузки пользователей:', err);
+    }
+  }, []);
+
+  // ===== Первоначальная загрузка =====
   useEffect(() => {
     loadSenders();
     loadFiltersOptions();
-    loadOrganizations();
+    loadRecipientOrganizations();  // переименовано
     loadTemplates();
+    loadUsers();  // добавлено
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -255,7 +344,14 @@ export const AppProvider = ({ children }) => {
     loadRecipients();
   }, [filters]);
 
+  // ===== Значения для провайдера =====
   const value = {
+    groups,
+    groupsLoading,
+    groupsError,
+    groupsPagination,
+    loadGroups,
+    // Рассылка
     senders,
     selectedSenderId,
     setSelectedSenderId,
@@ -263,7 +359,7 @@ export const AppProvider = ({ children }) => {
     filters,
     setFilters,
     filtersOptions,
-    organizations,
+    recipientOrganizations,        // переименовано
     selectedRecipientIds,
     setSelectedRecipientIds,
     isSending,
@@ -290,6 +386,24 @@ export const AppProvider = ({ children }) => {
     handleStop,
     handleClearLogs,
     updateComment,
+
+    // Новые: организации (таблица)
+    orgs,
+    orgsLoading,
+    orgsError,
+    orgsPagination,
+    loadOrgs,
+
+    // Новые: слушатели
+    listeners,
+    listenersLoading,
+    listenersError,
+    listenersPagination,
+    loadListeners,
+
+    // Пользователи (для модальных окон)
+    users,
+    loadUsers,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

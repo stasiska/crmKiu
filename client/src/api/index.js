@@ -5,15 +5,7 @@ const baseURL = import.meta.env.VITE_API_URL || '/api';
 const api = axios.create({
   baseURL: baseURL,
   headers: { 'Content-Type': 'application/json' },
-});
-
-// Интерцептор для добавления токена
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true, // ✅ Используем HttpOnly cookies
 });
 
 // ===== ПУБЛИЧНЫЕ МЕТОДЫ =====
@@ -48,7 +40,7 @@ export const importRecipients = (file) => {
   }).then(r => r.data);
 };
 export const fetchFiltersOptions = () => api.get('/recipients/filters').then(r => r.data);
-export const fetchOrganizations = () => api.get('/recipients/organizations').then(r => r.data);
+export const fetchRecipientOrganizations = () => api.get('/recipients/organizations').then(r => r.data);
 export const updateRecipientComment = (id, comment) =>
   api.put(`/recipients/${id}/comment`, { comment }).then(r => r.data);
 
@@ -76,6 +68,51 @@ export const fetchReminders = (params) => api.get('/reminders', { params }).then
 export const updateReminder = (id, data) => api.put(`/reminders/${id}`, data).then(r => r.data);
 export const deleteReminder = (id) => api.delete(`/reminders/${id}`).then(r => r.data);
 export const fetchDueCount = () => api.get('/reminders/due-count').then(r => r.data);
+
+// ===== Организации =====
+export const fetchOrganizations = (params) => api.get('/organizations', { params }).then(r => r.data);
+export const fetchOrganizationOptions = () => api.get('/organizations/options').then(r => r.data);
+export const fetchOrganization = (id) => api.get(`/organizations/${id}`).then(r => r.data);
+export const createOrganization = (data) => api.post('/organizations', data).then(r => r.data);
+export const updateOrganization = (id, data) => api.put(`/organizations/${id}`, data).then(r => r.data);
+export const deleteOrganization = (id) => api.delete(`/organizations/${id}`).then(r => r.data);
+
+// ===== Слушатели =====
+export const fetchListeners = (params) => api.get('/listeners', { params }).then(r => r.data);
+export const fetchListenerOptions = () => api.get('/listeners/options').then(r => r.data);
+export const fetchListener = (id) => api.get(`/listeners/${id}`).then(r => r.data);
+export const createListener = (data) => api.post('/listeners', data).then(r => r.data);
+export const updateListener = (id, data) => api.put(`/listeners/${id}`, data).then(r => r.data);
+export const deleteListener = (id) => api.delete(`/listeners/${id}`).then(r => r.data);
+
+// ===== Группы =====
+export const fetchGroups = (params) => api.get('/groups', { params }).then(r => r.data);
+export const fetchGroup = (id) => api.get(`/groups/${id}`).then(r => r.data);
+export const createGroup = (data) => api.post('/groups', data).then(r => r.data);
+export const updateGroup = (id, data) => api.put(`/groups/${id}`, data).then(r => r.data);
+export const deleteGroup = (id) => api.delete(`/groups/${id}`).then(r => r.data);
+
+// ===== Участники групп =====
+export const fetchGroupListeners = (groupId, params) =>
+  api.get(`/groups/${groupId}/listeners`, { params }).then(r => r.data);
+export const addListenersToGroup = (groupId, listenerIds) =>
+  api.post(`/groups/${groupId}/listeners`, { listenerIds }).then(r => r.data);
+export const removeListenerFromGroup = (groupId, listenerId) =>
+  api.delete(`/groups/${groupId}/listeners/${listenerId}`).then(r => r.data);
+export const clearGroupListeners = (groupId) =>
+  api.delete(`/groups/${groupId}/listeners`).then(r => r.data);
+
+// ===== Заметки организаций =====
+export const fetchOrganizationNotes = (orgId, params) =>
+  api.get(`/organizations/${orgId}/notes`, { params }).then(r => r.data);
+export const fetchOrganizationNote = (orgId, noteId) =>
+  api.get(`/organizations/${orgId}/notes/${noteId}`).then(r => r.data);
+export const createOrganizationNote = (orgId, data) =>
+  api.post(`/organizations/${orgId}/notes`, data).then(r => r.data);
+export const updateOrganizationNote = (orgId, noteId, data) =>
+  api.put(`/organizations/${orgId}/notes/${noteId}`, data).then(r => r.data);
+export const deleteOrganizationNote = (orgId, noteId) =>
+  api.delete(`/organizations/${orgId}/notes/${noteId}`).then(r => r.data);
 
 // === Таски =====
 export const fetchTasks = (status) => {

@@ -12,7 +12,7 @@ async function getUsers(req, res) {
 
 async function createUser(req, res) {
   try {
-    const { email, password, name, role } = req.body;
+    const { email, password, name, role, branch } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email и пароль обязательны' });
     }
@@ -25,9 +25,10 @@ async function createUser(req, res) {
       email,
       passwordHash,
       name: name || '',
-      role: role || 'user'
+      role: role || 'user',
+      branch: branch || null
     });
-    res.status(201).json({ id: user.id, email: user.email, name: user.name, role: user.role });
+    res.status(201).json({ id: user.id, email: user.email, name: user.name, role: user.role, branch: user.branch });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -36,7 +37,7 @@ async function createUser(req, res) {
 async function updateUser(req, res) {
   try {
     const userId = parseInt(req.params.id);
-    const { role, name } = req.body;
+    const { role, name, branch } = req.body;
     // Нельзя менять роль последнего администратора? Пока пропустим.
     // Получаем пользователя
     const user = await db.getUserById(userId);
@@ -44,6 +45,7 @@ async function updateUser(req, res) {
     const updates = {};
     if (role !== undefined) updates.role = role;
     if (name !== undefined) updates.name = name;
+    if (branch !== undefined) updates.branch = branch;
     // в db/index.js нет функции updateUser, создадим её
     const ok = await db.updateUser(userId, updates);
     if (!ok) return res.status(500).json({ error: 'Не удалось обновить' });

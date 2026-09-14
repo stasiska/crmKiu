@@ -1,7 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
+const rateLimit = require('express-rate-limit');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB лимит
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Только Excel файлы (.xls, .xlsx) разрешены'));
+    }
+  }
+});
+
+const uploadDocx = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB лимит
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Только Word файлы (.docx) разрешены'));
+    }
+  }
+});
+
 const db = require('../db');
 
 const {
@@ -18,6 +53,15 @@ const {
   updateReminderSchema,
   taskSchema,
   updateTaskSchema,
+  organizationSchema,
+  updateOrganizationSchema,
+  listenerSchema,
+  updateListenerSchema,
+  noteSchema,
+  updateNoteSchema,
+  groupSchema,
+  updateGroupSchema,
+  addListenersSchema,
 } = require('../validators');
 
 const recipientCtrl = require('../controllers/recipientController');
@@ -28,11 +72,29 @@ const { canSend } = require('../services/rateLimiter');
 const { login, verifyToken } = require('../services/authService');
 const { authMiddleware, isAdmin } = require('../middleware/auth');
 
+// ---- Rate Limiter для login ----
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 5, // максимум 5 попыток
+  message: { error: 'Слишком много попыток входа. Попробуйте через 15 минут.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Не считаем успешные попытки
+});
+
 // ---- Публичные маршруты ----
-router.post('/auth/login', validate(loginSchema), async (req, res) => {
+router.post('/auth/login', loginLimiter, validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await login(email, password);
+    // Устанавливаем httpOnly cookie
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // только HTTPS в продакшене
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 1 день
+    });
+    // Возвращаем токен в теле (для клиента, который использует заголовок)
     res.json(result);
   } catch (err) {
     res.status(401).json({ error: err.message });
@@ -42,10 +104,14 @@ router.post('/auth/login', validate(loginSchema), async (req, res) => {
 // ---- SSE для прогресса ----
 const sseClients = [];
 router.get('/send/progress', (req, res) => {
-  const token = req.query.token;
-  if (!token) return res.status(401).json({ error: 'Токен не передан' });
+   const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).json({ error: 'Токен не передан' });
+  }
   const decoded = verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: 'Недействительный токен' });
+  if (!decoded) {
+    return res.status(401).json({ error: 'Недействительный токен' });
+  }
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -114,9 +180,20 @@ router.delete('/logs', logCtrl.clearLogs);
 // ---- Отправка писем ----
 router.post('/send', async (req, res) => {
   const { senderId, recipientIds, subject, body, ignoreDuplicate } = req.body;
-  if (!senderId || !recipientIds || !recipientIds.length || !subject || !body) {
-    return res.status(400).json({ error: 'Не все поля заполнены' });
+
+  // Валидация recipientIds
+  if (!senderId || !recipientIds || !Array.isArray(recipientIds) || recipientIds.length === 0) {
+    return res.status(400).json({ error: 'Не передан senderId или recipientIds (должен быть массив чисел)' });
   }
+  // Проверка, что все элементы – числа
+  if (!recipientIds.every(id => Number.isInteger(id))) {
+    return res.status(400).json({ error: 'recipientIds должен содержать только целые числа' });
+  }
+
+  if (!subject || !body) {
+    return res.status(400).json({ error: 'Тема и тело письма обязательны' });
+  }
+
   const limitCheck = await canSend(senderId);
   if (!limitCheck.allowed) {
     return res.status(429).json({ error: `Лимит превышен: ${limitCheck.reason}` });
@@ -222,5 +299,93 @@ router.get('/unread-total', notificationCtrl.getUnreadTotal);
 const commentCtrl = require('../controllers/commentController');
 router.get('/recipients/:recipientId/comments', commentCtrl.getComments);
 router.post('/recipients/:recipientId/comments', validate(commentSchema), commentCtrl.addComment);
+
+// ---- Организации ----
+const organizationCtrl = require('../controllers/organizationController');
+router.get('/organizations', organizationCtrl.getOrganizations);
+router.get('/organizations/options', organizationCtrl.getOrganizationsOptions);
+router.get('/organizations/:id', organizationCtrl.getOrganization);
+router.post('/organizations', validate(organizationSchema), organizationCtrl.createOrganization);
+router.put('/organizations/:id', validate(updateOrganizationSchema), organizationCtrl.updateOrganization);
+router.delete('/organizations/:id', organizationCtrl.deleteOrganization);
+
+// ---- Слушатели ----
+const listenerCtrl = require('../controllers/listenerController');
+router.get('/listeners', listenerCtrl.getListeners);
+router.get('/listeners/options', listenerCtrl.getListenersOptions);
+router.get('/listeners/:id', listenerCtrl.getListener);
+router.post('/listeners', validate(listenerSchema), listenerCtrl.createListener);
+router.put('/listeners/:id', validate(updateListenerSchema), listenerCtrl.updateListener);
+router.delete('/listeners/:id', listenerCtrl.deleteListener);
+
+// ---- Заметки организаций ----
+const noteCtrl = require('../controllers/organizationNoteController');
+router.get('/organizations/:organizationId/notes', noteCtrl.getNotes);
+router.get('/organizations/:organizationId/notes/:id', noteCtrl.getNote);
+router.post('/organizations/:organizationId/notes', validate(noteSchema), noteCtrl.createNote);
+router.put('/organizations/:organizationId/notes/:id', validate(updateNoteSchema), noteCtrl.updateNote);
+router.delete('/organizations/:organizationId/notes/:id', noteCtrl.deleteNote);
+
+// ===== Группы =====
+const groupCtrl = require('../controllers/groupController');
+router.get('/groups', groupCtrl.getGroups);
+router.get('/groups/:id', groupCtrl.getGroup);
+router.post('/groups', validate(groupSchema), groupCtrl.createGroup);
+router.put('/groups/:id', validate(updateGroupSchema), groupCtrl.updateGroup);
+router.delete('/groups/:id', groupCtrl.deleteGroup);
+
+// ===== Участники групп =====
+const groupListenerCtrl = require('../controllers/groupListenerController');
+router.get('/groups/:groupId/listeners', groupListenerCtrl.getListeners);
+router.post('/groups/:groupId/listeners', validate(addListenersSchema), groupListenerCtrl.addListeners);
+router.delete('/groups/:groupId/listeners/:listenerId', groupListenerCtrl.removeListener);
+router.delete('/groups/:groupId/listeners', groupListenerCtrl.clearListeners);
+
+// ===== Приказы (документы групп) =====
+const orderCtrl = require('../controllers/orderController');
+const { generateOrderSchema, attachOrderSchema, uploadOrderSchema } = require('../validators/orderValidator');
+const multerOrders = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      cb(null, true);
+    } else {
+      cb(new Error('Разрешены только файлы .docx'));
+    }
+  }
+});
+router.post('/groups/:groupId/orders/generate', validate(generateOrderSchema), orderCtrl.generateOrder);
+router.post('/groups/:groupId/orders', validate(attachOrderSchema), orderCtrl.attachOrder);
+router.post('/groups/:groupId/orders/upload', multerOrders.single('file'), validate(uploadOrderSchema), orderCtrl.uploadOrder);
+router.get('/groups/:groupId/orders', orderCtrl.getGroupOrders);
+router.get('/groups/:groupId/orders/:orderId/download', orderCtrl.downloadOrder);
+router.delete('/groups/:groupId/orders/:orderId', orderCtrl.deleteOrder);
+
+// ===== Филиалы =====
+const branchCtrl = require('../controllers/branchController');
+const { createBranchSchema, updateBranchSchema } = require('../validators/branchValidator');
+router.get('/branches', branchCtrl.getBranches);
+router.get('/branches/:id', branchCtrl.getBranch);
+router.post('/branches', isAdmin, validate(createBranchSchema), branchCtrl.createBranch);
+router.put('/branches/:id', isAdmin, validate(updateBranchSchema), branchCtrl.updateBranch);
+router.delete('/branches/:id', isAdmin, branchCtrl.deleteBranch);
+
+// ===== Шаблоны документов =====
+const docTemplateCtrl = require('../controllers/documentTemplateController');
+router.get('/document-templates', isAdmin, docTemplateCtrl.getTemplates);
+router.get('/document-templates/:id', isAdmin, docTemplateCtrl.getTemplate);
+router.post('/document-templates', isAdmin, docTemplateCtrl.createTemplate);
+router.put('/document-templates/:id', isAdmin, docTemplateCtrl.updateTemplate);
+router.delete('/document-templates/:id', isAdmin, docTemplateCtrl.deleteTemplate);
+
+// Document generation and management
+const documentCtrl = require('../controllers/documentController');
+router.post('/groups/:groupId/documents/generate', authMiddleware, documentCtrl.generateDocument);
+router.post('/groups/:groupId/documents/attach', authMiddleware, documentCtrl.attachDocument);
+router.get('/groups/:groupId/documents', authMiddleware, documentCtrl.getGroupDocuments);
+router.get('/groups/:groupId/documents/:documentId/download', authMiddleware, documentCtrl.downloadDocument);
+router.delete('/groups/:groupId/documents/:documentId', authMiddleware, documentCtrl.deleteDocument);
+router.post('/groups/:groupId/documents/upload', authMiddleware, uploadDocx.single('file'), documentCtrl.uploadDocument);
 
 module.exports = router;

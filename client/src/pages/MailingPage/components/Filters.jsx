@@ -6,7 +6,7 @@ const Filters = () => {
     filters,
     setFilters,
     filtersOptions,
-    organizations,
+    recipientOrganizations,
   } = useContext(AppContext);
 
   const handleFilterChange = (e) => {
@@ -90,7 +90,7 @@ const Filters = () => {
           style={{ minHeight: '42px', border: '1px solid #d9e0e8', borderRadius: '8px', width: '100%', padding: '0 12px' }}
         >
           <option value="">Все организации</option>
-          {organizations.map((o) => (
+          {recipientOrganizations.map((o) => (
             <option key={o.organization} value={o.organization}>{o.organization}</option>
           ))}
         </select>

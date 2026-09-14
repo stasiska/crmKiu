@@ -1,14 +1,13 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-me';
+const config = require('../config');
 
 function generateToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
+    config.jwtSecret,
+    { expiresIn: '1d' }
   );
 }
 
@@ -24,7 +23,7 @@ async function login(email, password) {
 
 function verifyToken(token) {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, config.jwtSecret);
   } catch (e) {
     return null;
   }

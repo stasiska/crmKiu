@@ -10,7 +10,8 @@ const UsersManager = () => {
     email: '',
     password: '',
     name: '',
-    role: 'user'
+    role: 'user',
+    branch: ''
   });
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
@@ -45,14 +46,15 @@ const UsersManager = () => {
         // обновление только роли и имени (пароль не меняем)
         await updateUser(editingId, {
           name: formData.name,
-          role: formData.role
+          role: formData.role,
+          branch: formData.branch || null
         });
         setSuccess('Пользователь обновлён');
       } else {
         await createUser(formData);
         setSuccess('Пользователь создан');
       }
-      setFormData({ email: '', password: '', name: '', role: 'user' });
+      setFormData({ email: '', password: '', name: '', role: 'user', branch: '' });
       setEditingId(null);
       loadUsers();
     } catch (err) {
@@ -66,13 +68,14 @@ const UsersManager = () => {
       email: user.email,
       password: '',
       name: user.name || '',
-      role: user.role || 'user'
+      role: user.role || 'user',
+      branch: user.branch || ''
     });
   };
 
   const handleCancel = () => {
     setEditingId(null);
-    setFormData({ email: '', password: '', name: '', role: 'user' });
+    setFormData({ email: '', password: '', name: '', role: 'user', branch: '' });
     setError('');
     setSuccess('');
   };
@@ -103,6 +106,7 @@ const UsersManager = () => {
           <select name="role" value={formData.role} onChange={handleChange} className="form-control">
             {roles.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
+          <input type="text" name="branch" placeholder="Филиал" value={formData.branch} onChange={handleChange} className="form-control" />
         </div>
         <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
           <button type="submit" className="btn btn-kiu">{editingId ? 'Обновить' : 'Добавить'}</button>
@@ -116,6 +120,7 @@ const UsersManager = () => {
               <strong>{u.name || u.email}</strong>
               <span style={{ marginLeft: '12px', color: '#6b7280' }}>{u.email}</span>
               <span style={{ marginLeft: '12px', background: '#e5e7eb', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{u.role}</span>
+              {u.branch && <span style={{ marginLeft: '12px', color: '#6b7280', fontSize: '14px' }}>📍 {u.branch}</span>}
             </div>
             <div>
               {u.id !== currentUser?.id && (

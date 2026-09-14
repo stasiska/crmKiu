@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1hAYLIC3W88G4Jeqxu8SiEricbONHLanRuTPoys31AZAlH9hiqsB2uOmxjAV6nA
+\restrict 1Om4XOo4pEGvNZLQ9HWafVjuQVJGfuwqR0tlGd8S9QbltGc6GSae9BvmDDgbKfi
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -467,6 +467,21 @@ COPY public.notifications (id, user_id, type, message, link, is_read, created_at
 --
 
 COPY public.recipients (id, email, name, phone, city, organization, specialization, comment, extra, imported_at) FROM stdin;
+76	stuska225@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "stuska225@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
+77	tvink4423@gmail.com	Иван	7 999 999 99-99	Воронеж	ООО Бман	Бизнес		{"email": "tvink4423@gmail.com", "имя": "Иван", "город": "Воронеж", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Бизнес"}	2026-08-31 10:59:36.338672
+78	tvink1@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "tvink1@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
+79	tvink2@gmail.com	Иван	7 999 999 99-99	Воронеж	ООО Бман	Бизнес		{"email": "tvink2@gmail.com", "имя": "Иван", "город": "Воронеж", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Бизнес"}	2026-08-31 10:59:36.338672
+80	tvink3@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "tvink3@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
+81	tvink4@gmail.com		7 999 999 99-99	Воронеж	ООО Бман	Бизнес		{"email": "tvink4@gmail.com", "имя": "", "город": "Воронеж", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Бизнес"}	2026-08-31 10:59:36.338672
+82	tvink5@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "tvink5@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
+83	tvink6@gmail.com	Иван	7 999 999 99-99	Воронеж	ООО Бман	Бизнес		{"email": "tvink6@gmail.com", "имя": "Иван", "город": "Воронеж", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Бизнес"}	2026-08-31 10:59:36.338672
+84	tvink7@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "tvink7@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
+85	tvink8@gmail.com	Иван	7 999 999 99-99	Воронеж	ООО Бман	Бизнес		{"email": "tvink8@gmail.com", "имя": "Иван", "город": "Воронеж", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Бизнес"}	2026-08-31 10:59:36.338672
+86	tvink9@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "tvink9@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
+87	tvink10@gmail.com	Иван	7 999 999 99-99	Воронеж	ООО Бман	Бизнес		{"email": "tvink10@gmail.com", "имя": "Иван", "город": "Воронеж", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Бизнес"}	2026-08-31 10:59:36.338672
+88	tvink11@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "tvink11@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
+89	tvink12@gmail.com	Иван	7 999 999 99-99	Воронеж	ООО Бман	Бизнес		{"email": "tvink12@gmail.com", "имя": "Иван", "город": "Воронеж", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Бизнес"}	2026-08-31 10:59:36.338672
+90	tvink13@gmail.com	Стас	7 999 999 99-99	Казань	ООО Бман	Психология		{"email": "tvink13@gmail.com", "имя": "Стас", "город": "Казань", "телефон": "7 999 999 99-99", "организация": "ООО Бман", "специализация": "Психология"}	2026-08-31 10:59:36.338672
 \.
 
 
@@ -483,6 +498,8 @@ COPY public.reminders (id, recipient_id, recipient_email, reminder_date, message
 --
 
 COPY public.send_logs (id, recipient_email, sender_id, subject, body_preview, status, error_message, sent_at) FROM stdin;
+33	tvink4423@gmail.com	1	Курс по &#x411;&#x438;&#x437;&#x43D;&#x435;&#x441; для &#x418;&#x432;&#x430;&#x43D;	<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <style>\n    body { font-family: Arial, sans-serif; background-color: #	sent	\N	2026-08-31 10:59:53.042576
+34	tvink4423@gmail.com	1	Привет, &#x418;&#x432;&#x430;&#x43D;!	<h1>Здравствуйте, &#x418;&#x432;&#x430;&#x43D;!</h1><p>Рады видеть вас на нашем курсе возможно.</p>	sent	\N	2026-08-31 11:00:26.602926
 \.
 
 
@@ -491,17 +508,17 @@ COPY public.send_logs (id, recipient_email, sender_id, subject, body_preview, st
 --
 
 COPY public.senders (id, name, email, host, port, secure, password, user_id, created_at) FROM stdin;
-1	Моя почта	stas21kom12@gmail.com	smtp.gmail.com	465	1	pxkr hpfx pift gybn	1	2026-08-24 13:10:23.449928
-2	Корпоративная почта	IgoshinaDA@ieml.ru	smtp.yandex.ru	587	0	hlpscnofdopaqkaf	1	2026-08-25 13:50:12.886531
-3	Корпоративная почта	IgoshinaDA@ieml.ru	smtp.yandex.ru	587	0	hlpscnofdopaqkaf	38	2026-08-26 10:50:41.302039
-4	Корпоративная почта	MylnikovaAA@ieml.ru	smtp.yandex.ru	587	0	eacjjrkdeeawtzui	30	2026-08-26 10:58:23.649845
-5	Корпоративная почта	muhamethanova@ieml.ru	smtp.yandex.ru	587	0	ayhzvpqesujbbepv	31	2026-08-26 11:00:25.550955
-6	Корпоративная почта	azinaaa@ieml.ru	smtp.yandex.ru	587	0	lvyefdqsvjpwqwrl	32	2026-08-26 11:01:53.90858
-7	Корпоративная почта	gimadievaai3@ieml.ru	smtp.yandex.ru	587	0	ocpvorahowfafzoh	33	2026-08-26 11:04:00.299802
-8	Корпоративная почта	PetukhovaAK@ieml.ru	smtp.yandex.ru	587	0	rmuguqkokuenqabl	34	2026-08-26 11:06:04.958082
-9	Корпоративная почта	aapakova@ieml.ru	smtp.yandex.ru	587	0	uilvmumidcsjrtho	35	2026-08-26 11:07:20.530674
-10	Корпоративная почта	tovkalevaao@ieml.ru	smtp.yandex.ru	587	0	chvyvcnqevjnyyal	39	2026-08-27 11:43:06.091203
-11	Корпоративная почта	bakhshalievin@ieml.ru	smtp.yandex.ru	587	0	uraikjcibrvyvltd	40	2026-08-27 11:44:03.492742
+1	Моя почта	stas21kom12@gmail.com	smtp.gmail.com	465	1	d7edda51bca95d3fef03fc77b68e6d59:5327e234ee0e672bde463c0eca488aaf80cf91eedc52f2a9469bdefc2d68b889	1	2026-08-24 13:10:23.449928
+2	Корпоративная почта	IgoshinaDA@ieml.ru	smtp.yandex.ru	587	0	6b3c0f1c53a280e3e423698cb37e6ebd:fd3ede0e535df0f0b03067983909b6e94f77323288b1d82dd2182a785cc623be	1	2026-08-25 13:50:12.886531
+3	Корпоративная почта	IgoshinaDA@ieml.ru	smtp.yandex.ru	587	0	997be259ba04c5e1ee0a458febb090bb:109bd233c6530c2234bb8d09fee13f970cdd950df099b991aad2a7722cfd2e88	38	2026-08-26 10:50:41.302039
+4	Корпоративная почта	MylnikovaAA@ieml.ru	smtp.yandex.ru	587	0	989f0c2200e1bd10e79f7962e8e820a9:eb3232270ab126e680d2c2fbf8ad1ad5335fd068b62ae17ec0e8b29c9dc309f8	30	2026-08-26 10:58:23.649845
+5	Корпоративная почта	muhamethanova@ieml.ru	smtp.yandex.ru	587	0	d8cf9f3e57d9462d8416da01c68578bc:02e73f3363940aaf8bc00cfedc2975770dee71afab81a89ba93ccc0b27da54a0	31	2026-08-26 11:00:25.550955
+6	Корпоративная почта	azinaaa@ieml.ru	smtp.yandex.ru	587	0	ddf79045687200773252e348a44573f3:84fd599742064ea1d937629aeab5447f911bb72a66fb1471d83d799d0a744592	32	2026-08-26 11:01:53.90858
+7	Корпоративная почта	gimadievaai3@ieml.ru	smtp.yandex.ru	587	0	1774c6756e9cbdf8f6045dda491787b6:1054422291b48f0cd6e7fd38011df0457ffa866019de86cbfae2392933cc616f	33	2026-08-26 11:04:00.299802
+8	Корпоративная почта	PetukhovaAK@ieml.ru	smtp.yandex.ru	587	0	b435e97cf67cbf3f69d52721a9722f8a:a0435de8bb2a5a33850c23192027bc8d0b553ed71097e861ee76636c1a53627e	34	2026-08-26 11:06:04.958082
+9	Корпоративная почта	aapakova@ieml.ru	smtp.yandex.ru	587	0	6630f70ce924005701f66a2f22f25d59:38afc1f4ea8381b1997ffc66f3a171afd59ab2a20bd7889bb92eb3935063f2ae	35	2026-08-26 11:07:20.530674
+10	Корпоративная почта	tovkalevaao@ieml.ru	smtp.yandex.ru	587	0	7552857466e27caeb00551d4194cb6e5:20b1f1127c24997101b8d31e5146871faed825769f0ca949b524966a54f1b8e4	39	2026-08-27 11:43:06.091203
+11	Корпоративная почта	bakhshalievin@ieml.ru	smtp.yandex.ru	587	0	daa2689b31baeaea6b216440bff70659:00c24335e618b0fe17ab0a43fc9408ee0a6e1499f9aeaf67e5c65ec4c35270cc	40	2026-08-27 11:44:03.492742
 \.
 
 
@@ -564,7 +581,7 @@ SELECT pg_catalog.setval('public.notifications_id_seq', 5, true);
 -- Name: recipients_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.recipients_id_seq', 75, true);
+SELECT pg_catalog.setval('public.recipients_id_seq', 90, true);
 
 
 --
@@ -578,7 +595,7 @@ SELECT pg_catalog.setval('public.reminders_id_seq', 13, true);
 -- Name: send_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.send_logs_id_seq', 32, true);
+SELECT pg_catalog.setval('public.send_logs_id_seq', 34, true);
 
 
 --
@@ -606,7 +623,7 @@ SELECT pg_catalog.setval('public.templates_id_seq', 3, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 52, true);
+SELECT pg_catalog.setval('public.users_id_seq', 58, true);
 
 
 --
@@ -815,5 +832,5 @@ ALTER TABLE ONLY public.tasks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 1hAYLIC3W88G4Jeqxu8SiEricbONHLanRuTPoys31AZAlH9hiqsB2uOmxjAV6nA
+\unrestrict 1Om4XOo4pEGvNZLQ9HWafVjuQVJGfuwqR0tlGd8S9QbltGc6GSae9BvmDDgbKfi
 

@@ -20,6 +20,10 @@ const { templateSchema, updateTemplateSchema } = require('./templateValidator');
 const { createUserSchema, updateUserSchema } = require('./userValidator');
 const { reminderSchema, updateReminderSchema } = require('./reminderValidator');
 const { taskSchema, updateTaskSchema } = require('./taskValidator');
+const { organizationSchema, updateOrganizationSchema } = require('./organizationValidator');
+const { listenerSchema, updateListenerSchema } = require('./listenerValidator');
+const { noteSchema, updateNoteSchema } = require('./organizationNoteValidator');
+const { groupSchema, updateGroupSchema, addListenersSchema } = require('./groupValidator');
 
 module.exports = {
   validate,
@@ -35,4 +39,13 @@ module.exports = {
   updateReminderSchema,
   taskSchema,
   updateTaskSchema,
+  organizationSchema,
+  updateOrganizationSchema,
+  listenerSchema,
+  updateListenerSchema,
+  noteSchema,
+  updateNoteSchema,
+  groupSchema,
+  updateGroupSchema,
+  addListenersSchema,
 };

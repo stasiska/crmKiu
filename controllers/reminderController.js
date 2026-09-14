@@ -51,7 +51,7 @@ async function updateReminder(req, res) {
     const updates = {};
     if (reminderDate !== undefined) updates.reminderDate = reminderDate;
     if (message !== undefined) updates.message = message;
-    if (isCompleted !== undefined) updates.isCompleted = isCompleted;
+    if (isCompleted !== undefined) updates.is_completed = isCompleted;
     const ok = await db.updateReminder(id, updates);
     if (!ok) return res.status(404).json({ error: 'Напоминание не найдено' });
     res.json({ success: true });

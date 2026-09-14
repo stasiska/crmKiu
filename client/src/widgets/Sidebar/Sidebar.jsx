@@ -48,6 +48,12 @@ function Sidebar() {
         </NavLink>
 
         <NavLink
+          to="/app/dpo"
+          className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}
+        >
+          <span className="sidebar__link-icon">👥</span> Слушатели
+        </NavLink>
+        <NavLink
           to="/app/settings"
           className={({ isActive }) =>
             `sidebar__link ${isActive ? "sidebar__link--active" : ""}`

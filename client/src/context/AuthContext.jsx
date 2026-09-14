@@ -8,29 +8,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchMe()
-        .then(data => setUser(data.user))
-        .catch(() => {
-          localStorage.removeItem('token');
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    // Проверяем авторизацию через HttpOnly cookie (без localStorage)
+    fetchMe()
+      .then(data => setUser(data.user))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
     const data = await apiLogin(email, password);
-    localStorage.setItem('token', data.token);
+    // Токен теперь в HttpOnly cookie, не сохраняем в localStorage
     setUser(data.user);
     return data;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    // Очищаем только состояние, cookie удалится на сервере
     setUser(null);
   };
 

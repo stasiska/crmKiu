@@ -5,12 +5,14 @@ const createUserSchema = Joi.object({
   password: Joi.string().min(6).required(),
   name: Joi.string().max(100).optional(),
   role: Joi.string().valid('user', 'manager', 'director', 'admin').default('user'),
+  branch: Joi.string().max(100).allow(null).optional(),
 });
 
 const updateUserSchema = Joi.object({
   name: Joi.string().max(100).optional(),
   role: Joi.string().valid('user', 'manager', 'director', 'admin').optional(),
   password: Joi.string().min(6).optional(),
+  branch: Joi.string().max(100).allow(null).optional(),
 });
 
 module.exports = { createUserSchema, updateUserSchema };

@@ -2,6 +2,8 @@ const nodemailer = require('nodemailer');
 const db = require('../db');
 const config = require('../config');
 const { EventEmitter } = require('events');
+const { decrypt } = require('./encryptionService');
+const he = require('he');
 
 class EmailService extends EventEmitter {
   constructor() {
@@ -32,6 +34,7 @@ class EmailService extends EventEmitter {
       throw new Error(`Отправитель с id ${senderId} не найден`);
     }
 
+    // Пароль уже расшифрован в db.getSender()
     // Проверяем SMTP-соединение
     const transporter = nodemailer.createTransport({
       host: sender.host,
@@ -80,12 +83,19 @@ class EmailService extends EventEmitter {
         }
       }
 
-      // Персонализация с очищенным шаблоном
+      // Персонализация с очищенным шаблоном и экранированием для защиты от XSS
       const html = cleanedTemplate.replace(/\{([^}]+)\}/g, (match, key) => {
-        return recipient[key] || match;
+        const value = recipient[key] || match;
+        // Экранируем HTML для защиты от XSS
+        return he.encode(String(value));
       });
+
+      // Для subject НЕ используем HTML-экранирование (это plain text)
       const subjectPersonalized = subject.replace(/\{([^}]+)\}/g, (match, key) => {
-        return recipient[key] || match;
+        const value = recipient[key] || match;
+        // Subject - это plain text, просто возвращаем значение без HTML-экранирования
+        // Защита: nodemailer сам правильно кодирует subject в RFC 2047
+        return String(value);
       });
 
       try {
