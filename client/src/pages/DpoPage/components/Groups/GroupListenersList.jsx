@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { fetchGroupListeners, removeListenerFromGroup } from '../../../../api';
+import React, { useState, useEffect, useRef } from 'react';
+import { fetchGroupListeners, removeListenerFromGroup, updateGroupListener } from '../../../../api';
 import AddListenersModal from './AddListenersModal';
+import GroupListenerFinanceModal from './GroupListenerFinanceModal';
 import Pagination from '../../../../components/Pagination';
 import Toast from '../../../../components/Toast';
 import ConfirmModal from '../../../../components/ConfirmModal';
+import './GroupListenersList.css';
 
 const GroupListenersList = ({ groupId }) => {
   const [listeners, setListeners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [selectedListener, setSelectedListener] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const menuRef = useRef(null);
 
   const loadListeners = async (page = 1, limit = 20) => {
     try {
@@ -29,7 +35,22 @@ const GroupListenersList = ({ groupId }) => {
     loadListeners();
   }, [groupId]);
 
+  // Закрытие меню при клике вне
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleRemove = (listenerId, name) => {
+    setOpenMenuId(null);
     setConfirm({
       title: 'Удаление из группы',
       message: `Удалить ${name} из группы?`,
@@ -53,6 +74,28 @@ const GroupListenersList = ({ groupId }) => {
     setToast({ message: 'Слушатели добавлены', type: 'success' });
   };
 
+  const handleEditFinance = (listener) => {
+    setOpenMenuId(null);
+    setSelectedListener(listener);
+    setShowFinanceModal(true);
+  };
+
+  const handleSaveFinance = async (data) => {
+    try {
+      await updateGroupListener(groupId, selectedListener.id, data);
+      setToast({ message: 'Финансовые данные обновлены', type: 'success' });
+      setShowFinanceModal(false);
+      setSelectedListener(null);
+      loadListeners(pagination.page, pagination.limit);
+    } catch (err) {
+      setToast({ message: 'Ошибка: ' + err.message, type: 'error' });
+    }
+  };
+
+  const toggleMenu = (listenerId) => {
+    setOpenMenuId(openMenuId === listenerId ? null : listenerId);
+  };
+
   const totalPages = Math.ceil(pagination.total / pagination.limit) || 1;
 
   return (
@@ -66,14 +109,17 @@ const GroupListenersList = ({ groupId }) => {
         <p style={{ color: '#6b7280' }}>В группе нет слушателей</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table className="table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+          <table className="table listeners-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
               <tr>
                 <th>ФИО</th>
                 <th>Организация</th>
                 <th>Телефон</th>
                 <th>Email</th>
-                <th style={{ textAlign: 'center' }}>Действия</th>
+                <th>Сумма по договору</th>
+                <th>Оплачено</th>
+                <th>Вид оплаты</th>
+                <th style={{ textAlign: 'center', width: '60px' }}>Действия</th>
               </tr>
             </thead>
             <tbody>
@@ -83,15 +129,35 @@ const GroupListenersList = ({ groupId }) => {
                   <td>{l.organization_name || '—'}</td>
                   <td>{l.phone || '—'}</td>
                   <td>{l.email || '—'}</td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td>{l.contract_amount ? `${parseFloat(l.contract_amount).toFixed(2)} ₽` : '—'}</td>
+                  <td>{l.paid_amount ? `${parseFloat(l.paid_amount).toFixed(2)} ₽` : '—'}</td>
+                  <td>{l.payment_type || '—'}</td>
+                  <td style={{ textAlign: 'center', position: 'relative' }}>
                     <button
-                      onClick={() => {
-                        handleRemove(l.id, `${l.last_name} ${l.first_name}`);
-                      }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b' }}
+                      onClick={() => toggleMenu(l.id)}
+                      className="menu-toggle-btn"
+                      title="Действия"
                     >
-                      🗑️
+                      ⋮
                     </button>
+                    {openMenuId === l.id && (
+                      <div className="dropdown-menu" ref={menuRef}>
+                        <button
+                          className="menu-item"
+                          onClick={() => handleEditFinance(l)}
+                        >
+                          <span className="menu-icon">💰</span>
+                          Редактировать финансы
+                        </button>
+                        <button
+                          className="menu-item delete"
+                          onClick={() => handleRemove(l.id, `${l.last_name} ${l.first_name}`)}
+                        >
+                          <span className="menu-icon">🗑️</span>
+                          Удалить из группы
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -113,6 +179,18 @@ const GroupListenersList = ({ groupId }) => {
           groupId={groupId}
           onClose={() => setShowAddModal(false)}
           onSuccess={handleAddSuccess}
+        />
+      )}
+
+      {showFinanceModal && (
+        <GroupListenerFinanceModal
+          isOpen={showFinanceModal}
+          onClose={() => {
+            setShowFinanceModal(false);
+            setSelectedListener(null);
+          }}
+          listener={selectedListener}
+          onSave={handleSaveFinance}
         />
       )}
 

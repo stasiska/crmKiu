@@ -1055,11 +1055,11 @@ async function getGroupById(id) {
 async function createGroup(data) {
   const {
     manager_id, auditorium, branch,
-    course_name, status, hours, start_date, end_date, format
+    course_name, status, hours, start_date, end_date, format, manager_name, course_price
   } = data;
   const res = await query(
-    `INSERT INTO groups (manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+    `INSERT INTO groups (manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name, course_price)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
     [
       manager_id || null,
       auditorium || null,
@@ -1069,7 +1069,9 @@ async function createGroup(data) {
       hours || null,
       start_date || null,
       end_date || null,
-      format || 'аудитория'
+      format || 'аудитория',
+      manager_name || null,
+      course_price || null
     ]
   );
   return res.rows[0].id;
@@ -1077,7 +1079,7 @@ async function createGroup(data) {
 
 const ALLOWED_GROUP_FIELDS = [
   'manager_id', 'auditorium', 'branch',
-  'course_name', 'status', 'hours', 'start_date', 'end_date', 'format'
+  'course_name', 'status', 'hours', 'start_date', 'end_date', 'format', 'manager_name', 'course_price'
 ];
 
 async function updateGroup(id, updates) {
@@ -1121,9 +1123,9 @@ async function getGroupListeners(groupId, filters = {}) {
   );
   const total = parseInt(countRes.rows[0]?.count || 0, 10);
 
-  // Get data
+  // Get data with financial fields
   const dataRes = await query(
-    `SELECT l.*, gl.joined_at,
+    `SELECT l.*, gl.joined_at, gl.contract_amount, gl.paid_amount, gl.payment_type, gl.comment as listener_comment,
      o.name as organization_name,
      u.name as manager_name
      FROM group_listeners gl
@@ -1170,6 +1172,30 @@ async function removeListenerFromGroup(groupId, listenerId) {
   return res.rowCount > 0;
 }
 
+async function updateGroupListener(groupId, listenerId, updates) {
+  const allowed = ['contract_amount', 'paid_amount', 'payment_type', 'comment'];
+  const filtered = Object.keys(updates)
+    .filter(key => allowed.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  for (const [key, val] of Object.entries(filtered)) {
+    if (!/^[a-z_]+$/.test(key)) {
+      throw new Error(`Invalid field name: ${key}`);
+    }
+    fields.push(`${key} = $${idx}`);
+    values.push(val);
+    idx++;
+  }
+  if (fields.length === 0) return false;
+  values.push(groupId, listenerId);
+  const sql = `UPDATE group_listeners SET ${fields.join(', ')} WHERE group_id = $${idx} AND listener_id = $${idx+1}`;
+  const res = await query(sql, values);
+  return res.rowCount > 0;
+}
+
 async function clearGroupListeners(groupId) {
   const res = await query('DELETE FROM group_listeners WHERE group_id = $1', [groupId]);
   return res.rowCount;
@@ -1185,6 +1211,120 @@ async function checkListenersExist(listenerIds) {
   );
 
   return res.rows.map(r => r.id);
+}
+
+// ===== LISTENER NOTES =====
+
+async function getListenerNotes(listenerId, filters = {}) {
+  const { page = 1, limit = 50, type } = filters;
+  const offset = (page - 1) * limit;
+
+  let whereClause = 'WHERE ln.listener_id = $1';
+  const params = [listenerId];
+
+  if (type) {
+    whereClause += ' AND ln.type = $2';
+    params.push(type);
+  }
+
+  const countRes = await query(
+    `SELECT COUNT(*) as count FROM listener_notes ln ${whereClause}`,
+    params
+  );
+  const total = parseInt(countRes.rows[0]?.count || 0, 10);
+
+  const dataRes = await query(
+    `SELECT ln.*,
+     u1.name as creator_name,
+     u2.name as executor_name
+     FROM listener_notes ln
+     LEFT JOIN users u1 ON ln.creator_id = u1.id
+     LEFT JOIN users u2 ON ln.executor_id = u2.id
+     ${whereClause}
+     ORDER BY ln.date DESC NULLS LAST, ln.created_at DESC
+     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, limit, offset]
+  );
+
+  return {
+    data: dataRes.rows,
+    total,
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10)
+  };
+}
+
+async function createListenerNote(data) {
+  const { listener_id, type, date, note, executor_id, creator_id, file_link } = data;
+  const res = await query(
+    `INSERT INTO listener_notes (listener_id, type, date, note, executor_id, creator_id, file_link)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [listener_id, type, date || null, note, executor_id || null, creator_id, file_link || null]
+  );
+  return res.rows[0].id;
+}
+
+async function getListenerNoteById(id) {
+  const res = await query('SELECT * FROM listener_notes WHERE id = $1', [id]);
+  return res.rows[0] || null;
+}
+
+async function updateListenerNote(id, updates) {
+  const allowed = ['type', 'date', 'note', 'executor_id', 'file_link'];
+  const filtered = Object.keys(updates)
+    .filter(key => allowed.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+
+  const fields = [];
+  const values = [];
+  let idx = 1;
+
+  for (const [key, val] of Object.entries(filtered)) {
+    fields.push(`${key} = $${idx}`);
+    values.push(val);
+    idx++;
+  }
+
+  if (fields.length === 0) return false;
+
+  values.push(id);
+  const sql = `UPDATE listener_notes SET ${fields.join(', ')} WHERE id = $${idx}`;
+  const res = await query(sql, values);
+  return res.rowCount > 0;
+}
+
+async function deleteListenerNote(id) {
+  const res = await query('DELETE FROM listener_notes WHERE id = $1', [id]);
+  return res.rowCount > 0;
+}
+
+async function getListenerGroupHistory(listenerId, filters = {}) {
+  const { page = 1, limit = 50 } = filters;
+  const offset = (page - 1) * limit;
+
+  const countRes = await query(
+    `SELECT COUNT(*) as count FROM group_listeners gl WHERE gl.listener_id = $1`,
+    [listenerId]
+  );
+  const total = parseInt(countRes.rows[0]?.count || 0, 10);
+
+  const dataRes = await query(
+    `SELECT g.id, g.course_name, g.start_date, g.end_date, g.course_price,
+     gl.contract_amount, gl.paid_amount, gl.payment_type, gl.comment, gl.joined_at
+     FROM group_listeners gl
+     JOIN groups g ON gl.group_id = g.id
+     WHERE gl.listener_id = $1
+     ORDER BY g.start_date DESC NULLS LAST, gl.joined_at DESC
+     LIMIT $2 OFFSET $3`,
+    [listenerId, limit, offset]
+  );
+
+  return {
+    data: dataRes.rows,
+    total,
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10)
+  };
 }
 
 // ===== BRANCHES =====
@@ -1400,6 +1540,85 @@ async function deleteGroupDocument(id) {
   return res.rowCount > 0;
 }
 
+// ===== LISTENER NOTES =====
+
+async function getListenerNotes(listenerId, filters = {}) {
+  let sql = `SELECT ln.*,
+             u1.name as creator_name,
+             u2.name as executor_name
+             FROM listener_notes ln
+             LEFT JOIN users u1 ON ln.creator_id = u1.id
+             LEFT JOIN users u2 ON ln.executor_id = u2.id
+             WHERE ln.listener_id = $1`;
+  const values = [listenerId];
+  let idx = 2;
+
+  if (filters.type) {
+    sql += ` AND ln.type = $${idx}`;
+    values.push(filters.type);
+    idx++;
+  }
+
+  sql += ` ORDER BY ln.created_at DESC`;
+
+  const res = await query(sql, values);
+  return res.rows;
+}
+
+async function getListenerNoteById(id) {
+  const res = await query(
+    `SELECT ln.*,
+     u1.name as creator_name,
+     u2.name as executor_name
+     FROM listener_notes ln
+     LEFT JOIN users u1 ON ln.creator_id = u1.id
+     LEFT JOIN users u2 ON ln.executor_id = u2.id
+     WHERE ln.id = $1`,
+    [id]
+  );
+  return res.rows[0] || null;
+}
+
+async function createListenerNote(data) {
+  const { listener_id, type, date, note, executor_id, creator_id, file_link } = data;
+  const res = await query(
+    `INSERT INTO listener_notes (listener_id, type, date, note, executor_id, creator_id, file_link)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [listener_id, type, date || null, note, executor_id || null, creator_id, file_link || null]
+  );
+  return res.rows[0].id;
+}
+
+const ALLOWED_LISTENER_NOTE_FIELDS = ['type', 'date', 'note', 'executor_id', 'file_link'];
+
+async function updateListenerNote(id, updates) {
+  const filtered = Object.keys(updates)
+    .filter(key => ALLOWED_LISTENER_NOTE_FIELDS.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  for (const [key, val] of Object.entries(filtered)) {
+    if (!/^[a-z_]+$/.test(key)) {
+      throw new Error(`Invalid field name: ${key}`);
+    }
+    fields.push(`${key} = $${idx}`);
+    values.push(val);
+    idx++;
+  }
+  if (fields.length === 0) return false;
+  values.push(id);
+  const sql = `UPDATE listener_notes SET ${fields.join(', ')} WHERE id = $${idx}`;
+  const res = await query(sql, values);
+  return res.rowCount > 0;
+}
+
+async function deleteListenerNote(id) {
+  const res = await query('DELETE FROM listener_notes WHERE id = $1', [id]);
+  return res.rowCount > 0;
+}
+
 module.exports = {
   // Comments
   getComments,
@@ -1503,6 +1722,7 @@ module.exports = {
   getGroupListeners,
   addListenersToGroup,
   removeListenerFromGroup,
+  updateGroupListener,
   clearGroupListeners,
   checkListenersExist,
 
@@ -1527,6 +1747,16 @@ module.exports = {
   getGroupDocumentById,
   createGroupDocument,
   deleteGroupDocument,
+
+  // Listener Notes
+  getListenerNotes,
+  getListenerNoteById,
+  createListenerNote,
+  updateListenerNote,
+  deleteListenerNote,
+
+  // Listener Group History
+  getListenerGroupHistory,
 
   // Clear
   clearDatabase,

@@ -90,6 +90,7 @@ const GroupCard = ({ group, onClose, onEdit, onDelete }) => {
               <Field label="Менеджер" value={group.manager_name} />
               <Field label="Подразделение" value={group.branch} />
               <Field label="Аудитория" value={group.auditorium} />
+              <Field label="Стоимость курса" value={group.course_price ? `${parseFloat(group.course_price).toFixed(2)} ₽` : '—'} />
             </Section>
 
             <Section title="Детали курса">

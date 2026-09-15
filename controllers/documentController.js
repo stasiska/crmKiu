@@ -5,7 +5,7 @@ const db = require('../db');
 exports.generateDocument = async (req, res, next) => {
   try {
     const { groupId } = req.params;
-    const { templateType, orderNumber, deputyDirectorName } = req.body;
+    const { templateType, orderNumber } = req.body;
 
     let buffer;
     let filename;
@@ -17,18 +17,23 @@ exports.generateDocument = async (req, res, next) => {
         break;
 
       case 'diploma_order':
-        buffer = await documentService.generateDiplomaOrder(parseInt(groupId, 10), {
-          orderNumber,
-          deputyDirectorName
-        });
+        buffer = await documentService.generateDiplomaOrder(parseInt(groupId, 10), { orderNumber });
         filename = `Приказ_о_выдаче_документов_${orderNumber || Date.now()}.docx`;
         break;
 
       case 'diploma_order_kazan':
-        buffer = await documentService.generateDiplomaOrderKazan(parseInt(groupId, 10), {
-          orderNumber
-        });
+        buffer = await documentService.generateDiplomaOrderKazan(parseInt(groupId, 10), { orderNumber });
         filename = `Приказ_о_выдаче_документов_Казань_${orderNumber || Date.now()}.docx`;
+        break;
+
+      case 'expulsion_order':
+        buffer = await documentService.generateExpulsionOrder(parseInt(groupId, 10), { orderNumber });
+        filename = `Приказ_об_отчислении_${orderNumber || Date.now()}.docx`;
+        break;
+
+      case 'diploma_order_split':
+        buffer = await documentService.generateDiplomaOrderSplit(parseInt(groupId, 10), { orderNumber });
+        filename = `Приказ_о_выдаче_документов_раздельный_${orderNumber || Date.now()}.docx`;
         break;
 
       default:
@@ -47,7 +52,7 @@ exports.generateDocument = async (req, res, next) => {
 exports.attachDocument = async (req, res, next) => {
   try {
     const { groupId } = req.params;
-    const { templateType, orderNumber, deputyDirectorName } = req.body;
+    const { templateType, orderNumber } = req.body;
 
     let buffer;
     let filename;
@@ -61,20 +66,27 @@ exports.attachDocument = async (req, res, next) => {
         break;
 
       case 'diploma_order':
-        buffer = await documentService.generateDiplomaOrder(parseInt(groupId, 10), {
-          orderNumber,
-          deputyDirectorName
-        });
+        buffer = await documentService.generateDiplomaOrder(parseInt(groupId, 10), { orderNumber });
         filename = `Приказ_о_выдаче_документов_${orderNumber || Date.now()}.docx`;
         documentType = 'Приказ о выдаче документов';
         break;
 
       case 'diploma_order_kazan':
-        buffer = await documentService.generateDiplomaOrderKazan(parseInt(groupId, 10), {
-          orderNumber
-        });
+        buffer = await documentService.generateDiplomaOrderKazan(parseInt(groupId, 10), { orderNumber });
         filename = `Приказ_о_выдаче_документов_Казань_${orderNumber || Date.now()}.docx`;
         documentType = 'Приказ о выдаче документов (Казань)';
+        break;
+
+      case 'expulsion_order':
+        buffer = await documentService.generateExpulsionOrder(parseInt(groupId, 10), { orderNumber });
+        filename = `Приказ_об_отчислении_${orderNumber || Date.now()}.docx`;
+        documentType = 'Приказ об отчислении';
+        break;
+
+      case 'diploma_order_split':
+        buffer = await documentService.generateDiplomaOrderSplit(parseInt(groupId, 10), { orderNumber });
+        filename = `Приказ_о_выдаче_документов_раздельный_${orderNumber || Date.now()}.docx`;
+        documentType = 'Приказ о выдаче документов (раздельный)';
         break;
 
       default:

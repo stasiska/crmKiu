@@ -47,6 +47,8 @@ exports.createGroup = async (req, res, next) => {
     if (req.body.hours === '') req.body.hours = null;
     if (req.body.start_date === '') req.body.start_date = null;
     if (req.body.end_date === '') req.body.end_date = null;
+    if (req.body.manager_name === '') req.body.manager_name = null;
+    if (req.body.course_price === '') req.body.course_price = null;
 
     const {
       manager_id,
@@ -57,7 +59,9 @@ exports.createGroup = async (req, res, next) => {
       hours,
       start_date,
       end_date,
-      format
+      format,
+      manager_name,
+      course_price
     } = req.body;
 
     // Проверка существования менеджера, если указан
@@ -77,7 +81,9 @@ exports.createGroup = async (req, res, next) => {
       hours,
       start_date,
       end_date,
-      format
+      format,
+      manager_name,
+      course_price
     });
     const group = await db.getGroupById(id);
     res.status(201).json(group);
@@ -98,6 +104,8 @@ exports.updateGroup = async (req, res, next) => {
     if (req.body.hours === '') req.body.hours = null;
     if (req.body.start_date === '') req.body.start_date = null;
     if (req.body.end_date === '') req.body.end_date = null;
+    if (req.body.manager_name === '') req.body.manager_name = null;
+    if (req.body.course_price === '') req.body.course_price = null;
 
     const updates = req.body;
 
@@ -139,6 +147,34 @@ exports.deleteGroup = async (req, res, next) => {
 
     await db.deleteGroup(parseInt(id, 10));
     res.json({ message: 'Группа удалена' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PUT /api/groups/:groupId/listeners/:listenerId - Обновить финансовые данные слушателя в группе
+exports.updateGroupListener = async (req, res, next) => {
+  try {
+    const { groupId, listenerId } = req.params;
+    const updates = req.body;
+
+    // Преобразование пустых строк в null
+    if (updates.contract_amount === '') updates.contract_amount = null;
+    if (updates.paid_amount === '') updates.paid_amount = null;
+    if (updates.payment_type === '') updates.payment_type = null;
+    if (updates.comment === '') updates.comment = null;
+
+    const success = await db.updateGroupListener(
+      parseInt(groupId, 10),
+      parseInt(listenerId, 10),
+      updates
+    );
+
+    if (!success) {
+      return res.status(404).json({ error: 'Слушатель не найден в группе' });
+    }
+
+    res.json({ message: 'Финансовые данные обновлены' });
   } catch (err) {
     next(err);
   }

@@ -99,6 +99,8 @@ export const addListenersToGroup = (groupId, listenerIds) =>
   api.post(`/groups/${groupId}/listeners`, { listenerIds }).then(r => r.data);
 export const removeListenerFromGroup = (groupId, listenerId) =>
   api.delete(`/groups/${groupId}/listeners/${listenerId}`).then(r => r.data);
+export const updateGroupListener = (groupId, listenerId, data) =>
+  api.put(`/groups/${groupId}/listeners/${listenerId}`, data).then(r => r.data);
 export const clearGroupListeners = (groupId) =>
   api.delete(`/groups/${groupId}/listeners`).then(r => r.data);
 
@@ -113,6 +115,22 @@ export const updateOrganizationNote = (orgId, noteId, data) =>
   api.put(`/organizations/${orgId}/notes/${noteId}`, data).then(r => r.data);
 export const deleteOrganizationNote = (orgId, noteId) =>
   api.delete(`/organizations/${orgId}/notes/${noteId}`).then(r => r.data);
+
+// ===== Заметки слушателей =====
+export const fetchListenerNotes = (listenerId, params) =>
+  api.get(`/listeners/${listenerId}/notes`, { params }).then(r => r.data);
+export const fetchListenerNote = (listenerId, noteId) =>
+  api.get(`/listeners/${listenerId}/notes/${noteId}`).then(r => r.data);
+export const createListenerNote = (listenerId, data) =>
+  api.post(`/listeners/${listenerId}/notes`, data).then(r => r.data);
+export const updateListenerNote = (listenerId, noteId, data) =>
+  api.put(`/listeners/${listenerId}/notes/${noteId}`, data).then(r => r.data);
+export const deleteListenerNote = (listenerId, noteId) =>
+  api.delete(`/listeners/${listenerId}/notes/${noteId}`).then(r => r.data);
+
+// ===== История групп слушателя =====
+export const fetchListenerGroupHistory = (listenerId, params) =>
+  api.get(`/listeners/${listenerId}/groups`, { params }).then(r => r.data);
 
 // === Таски =====
 export const fetchTasks = (status) => {

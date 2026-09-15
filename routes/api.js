@@ -340,6 +340,17 @@ router.get('/groups/:groupId/listeners', groupListenerCtrl.getListeners);
 router.post('/groups/:groupId/listeners', validate(addListenersSchema), groupListenerCtrl.addListeners);
 router.delete('/groups/:groupId/listeners/:listenerId', groupListenerCtrl.removeListener);
 router.delete('/groups/:groupId/listeners', groupListenerCtrl.clearListeners);
+router.put('/groups/:groupId/listeners/:listenerId', groupCtrl.updateGroupListener);
+
+// ===== Заметки слушателей =====
+const listenerNoteCtrl = require('../controllers/listenerNoteController');
+router.get('/listeners/:id/notes', listenerNoteCtrl.getListenerNotes);
+router.post('/listeners/:id/notes', validate(noteSchema), listenerNoteCtrl.createListenerNote);
+router.put('/listeners/:id/notes/:noteId', validate(updateNoteSchema), listenerNoteCtrl.updateListenerNote);
+router.delete('/listeners/:id/notes/:noteId', listenerNoteCtrl.deleteListenerNote);
+
+// ===== История групп слушателя =====
+router.get('/listeners/:id/groups', listenerNoteCtrl.getListenerGroupHistory);
 
 // ===== Приказы (документы групп) =====
 const orderCtrl = require('../controllers/orderController');

@@ -51,6 +51,38 @@ async function generateDiplomaOrderKazan(groupId, options) {
   return renderTemplate(template.file_data, data);
 }
 
+/**
+ * Генерация приказа об отчислении
+ */
+async function generateExpulsionOrder(groupId, options) {
+  const group = await db.getGroupById(groupId);
+  if (!group) throw new Error('Группа не найдена');
+
+  const listeners = await db.getGroupListeners(groupId, { limit: 10000 });
+  const branch = await db.getBranchByName(group.branch);
+  const template = await db.getDocumentTemplate('expulsion_order');
+  if (!template) throw new Error('Шаблон "expulsion_order" не найден');
+
+  const data = buildExpulsionOrderData(group, listeners.data, branch, options);
+  return renderTemplate(template.file_data, data);
+}
+
+/**
+ * Генерация приказа о выдаче документов с разделением по образованию
+ */
+async function generateDiplomaOrderSplit(groupId, options) {
+  const group = await db.getGroupById(groupId);
+  if (!group) throw new Error('Группа не найдена');
+
+  const listeners = await db.getGroupListeners(groupId, { limit: 10000 });
+  const branch = await db.getBranchByName(group.branch);
+  const template = await db.getDocumentTemplate('diploma_order_split');
+  if (!template) throw new Error('Шаблон "diploma_order_split" не найден');
+
+  const data = buildDiplomaOrderSplitData(group, listeners.data, branch, options);
+  return renderTemplate(template.file_data, data);
+}
+
 function buildEnrollmentOrderData(group, listeners, branch, options) {
   return {
     order_date_formatted: formatDate(group.start_date),
@@ -83,7 +115,7 @@ function buildDiplomaOrderData(group, listeners, branch, options) {
     end_date_ru: formatDateRu(orderDate),
     listeners_numbered_list: buildDativeNumberedList(listeners),
     director_name: branch?.director_name || '',
-    deputy_director_name: options.deputyDirectorName || 'Н.Г. Сидоров',
+    deputy_director_name: group.manager_name || '',
   };
 }
 
@@ -105,6 +137,51 @@ function buildDiplomaOrderKazanData(group, listeners, branch, options) {
     listeners_numbered_list: buildDativeNumberedList(listeners),
     director_name: branch?.director_name || '',
     manager_name: group.manager_name || '',
+  };
+}
+
+function buildExpulsionOrderData(group, listeners, branch, options) {
+  // order_date_formatted = дата окончания курса (end_date)
+  // end_date_ru = дата окончания курса (end_date)
+  const orderDate = group.end_date;
+
+  return {
+    order_date_formatted: formatDate(orderDate),
+    city: branch?.city || '',
+    order_number: options.orderNumber || '',
+    branch: group.branch || '',
+    course_name: group.course_name || '',
+    hours: group.hours || '',
+    start_date_ru: formatDateRu(group.start_date),
+    end_date_ru: formatDateRu(orderDate),
+    listeners_numbered_list: buildNumberedList(listeners),
+    director_name: branch?.director_name || '',
+    deputy_director_name: group.manager_name || '',
+  };
+}
+
+function buildDiplomaOrderSplitData(group, listeners, branch, options) {
+  // Разделяем слушателей по наличию высшего образования
+  // education_level = 'higher' - высшее образование (дипломы)
+  // education_level = 'secondary' или другое - среднее образование (справки)
+  const withHigherEd = listeners.filter(l => l.education_level === 'higher');
+  const withoutHigherEd = listeners.filter(l => l.education_level !== 'higher');
+
+  const orderDate = group.end_date;
+
+  return {
+    order_date_formatted: formatDate(orderDate),
+    city: branch?.city || '',
+    order_number: options.orderNumber || '',
+    protocol_date_formatted: formatDateWithQuotes(options.protocolDate || orderDate),
+    course_name: group.course_name || '',
+    hours: group.hours || '',
+    start_date_ru: formatDateRu(group.start_date),
+    end_date_ru: formatDateRu(orderDate),
+    listeners_with_higher_ed: buildDativeNumberedList(withHigherEd),
+    listeners_without_higher_ed: buildDativeNumberedList(withoutHigherEd),
+    director_name: branch?.director_name || '',
+    deputy_director_name: group.manager_name || '',
   };
 }
 
@@ -182,4 +259,6 @@ module.exports = {
   generateEnrollmentOrder,
   generateDiplomaOrder,
   generateDiplomaOrderKazan,
+  generateExpulsionOrder,
+  generateDiplomaOrderSplit,
 };

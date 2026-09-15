@@ -32,6 +32,13 @@ const groupSchema = Joi.object({
   }),
   format: Joi.string().valid('аудитория', 'дистант').default('аудитория').messages({
     'any.only': 'Формат должен быть: аудитория или дистант'
+  }),
+  manager_name: Joi.string().max(255).allow(null, '').messages({
+    'string.max': 'ФИО менеджера не может быть длиннее 255 символов'
+  }),
+  course_price: Joi.number().min(0).allow(null).messages({
+    'number.base': 'Стоимость курса должна быть числом',
+    'number.min': 'Стоимость курса не может быть отрицательной'
   })
 });
 
@@ -66,6 +73,13 @@ const updateGroupSchema = Joi.object({
   }),
   format: Joi.string().valid('аудитория', 'дистант').messages({
     'any.only': 'Формат должен быть: аудитория или дистант'
+  }),
+  manager_name: Joi.string().max(255).allow(null, '').messages({
+    'string.max': 'ФИО менеджера не может быть длиннее 255 символов'
+  }),
+  course_price: Joi.number().min(0).allow(null).messages({
+    'number.base': 'Стоимость курса должна быть числом',
+    'number.min': 'Стоимость курса не может быть отрицательной'
   })
 });
 

@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ListenerGroupHistory from '../Listeners/ListenerGroupHistory';
+import ListenerNotes from './ListenerNotes';
+import './ListenerCard.css';
 
 const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization }) => {
+  const [activeTab, setActiveTab] = useState('info');
+
   const formatDate = (date) => date ? new Date(date).toLocaleDateString('ru-RU') : '—';
 
   const Section = ({ title, children }) => (
@@ -22,7 +27,7 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-content" style={{ maxWidth: '800px', background: '#fff', padding: '28px 32px', borderRadius: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div className="modal-content listener-card-modal" style={{ maxWidth: '900px', background: '#fff', padding: '28px 32px', borderRadius: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Карточка слушателя</h3>
           <span style={{ fontSize: '14px', color: '#6b7280' }}>
@@ -30,52 +35,101 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
           </span>
         </div>
 
-        <Section title="Основная информация">
-          <Field label="ФИО" value={`${listener.last_name} ${listener.first_name} ${listener.middle_name || ''}`} />
-          <Field label="Дата рождения" value={formatDate(listener.birth_date)} />
-          <Field label="Пол" value={listener.gender === 'male' ? 'Мужской' : listener.gender === 'female' ? 'Женский' : '—'} />
-          <Field label="Гражданство" value={listener.citizenship} />
-          <Field label="Телефон" value={listener.phone} />
-          <Field label="Email" value={listener.email} />
-        </Section>
+        {/* Tabs */}
+        <div className="listener-tabs">
+          <button
+            className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`}
+            onClick={() => setActiveTab('info')}
+          >
+            Основная информация
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            История групп
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'documents' ? 'active' : ''}`}
+            onClick={() => setActiveTab('documents')}
+          >
+            Документы
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('notes')}
+          >
+            Заметки
+          </button>
+        </div>
 
-        <Section title="Документы">
-          <Field label="Документ" value={listener.identity_document} />
-          <Field label="Серия" value={listener.document_series} />
-          <Field label="Номер" value={listener.document_number} />
-          <Field label="Выдан" value={listener.issued_by} />
-          <Field label="СНИЛС" value={listener.snils} />
-        </Section>
+        {/* Tab Content */}
+        <div className="tab-content">
+          {activeTab === 'info' && (
+            <>
+              <Section title="Основная информация">
+                <Field label="ФИО" value={`${listener.last_name} ${listener.first_name} ${listener.middle_name || ''}`} />
+                <Field label="Дата рождения" value={formatDate(listener.birth_date)} />
+                <Field label="Пол" value={listener.gender === 'male' ? 'Мужской' : listener.gender === 'female' ? 'Женский' : '—'} />
+                <Field label="Гражданство" value={listener.citizenship} />
+                <Field label="Телефон" value={listener.phone} />
+                <Field label="Email" value={listener.email} />
+              </Section>
 
-        <Section title="Адреса">
-          <Field label="Проживания" value={listener.residence_address} />
-          <Field label="Регистрации" value={listener.registration_address} />
-        </Section>
+              <Section title="Документы">
+                <Field label="Документ" value={listener.identity_document} />
+                <Field label="Серия" value={listener.document_series} />
+                <Field label="Номер" value={listener.document_number} />
+                <Field label="Выдан" value={listener.issued_by} />
+                <Field label="СНИЛС" value={listener.snils} />
+              </Section>
 
-        <Section title="Образование">
-          <Field label="Уровень" value={listener.education_level === 'higher' ? 'Высшее' : listener.education_level === 'secondary' ? 'СПО' : listener.education_level === 'basic' ? 'Аттестат' : '—'} />
-          <Field label="Серия документа" value={listener.education_series} />
-          <Field label="Номер документа" value={listener.education_number} />
-        </Section>
+              <Section title="Адреса">
+                <Field label="Проживания" value={listener.residence_address} />
+                <Field label="Регистрации" value={listener.registration_address} />
+              </Section>
 
-        <Section title="Работа и привязки">
-          {/* Организация — кликабельная */}
-          <div style={{ fontSize: '14px', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 500, color: '#1f2937' }}>Организация:</span>
-            {listener.organization_id ? (
-              <span
-                onClick={() => onOpenOrganization(listener.organization_id)}
-                style={{ color: '#1557a6', cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                {listener.organization_name || 'Без названия'}
-              </span>
-            ) : (
-              <span>—</span>
-            )}
-          </div>
-          <Field label="Менеджер" value={listener.manager_name} />
-          <Field label="Подразделение" value={listener.department} />
-        </Section>
+              <Section title="Образование">
+                <Field label="Уровень" value={listener.education_level === 'higher' ? 'Высшее' : listener.education_level === 'secondary' ? 'СПО' : listener.education_level === 'basic' ? 'Аттестат' : '—'} />
+                <Field label="Серия документа" value={listener.education_series} />
+                <Field label="Номер документа" value={listener.education_number} />
+              </Section>
+
+              <Section title="Работа и привязки">
+                <div style={{ fontSize: '14px', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: 500, color: '#1f2937' }}>Организация:</span>
+                  {listener.organization_id ? (
+                    <span
+                      onClick={() => onOpenOrganization(listener.organization_id)}
+                      style={{ color: '#1557a6', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      {listener.organization_name || 'Без названия'}
+                    </span>
+                  ) : (
+                    <span>—</span>
+                  )}
+                </div>
+                <Field label="Менеджер" value={listener.manager_name} />
+                <Field label="Подразделение" value={listener.department} />
+              </Section>
+            </>
+          )}
+
+          {activeTab === 'history' && (
+            <ListenerGroupHistory listenerId={listener.id} />
+          )}
+
+          {activeTab === 'documents' && (
+            <div className="documents-placeholder">
+              <p>Раздел прикрепленных документов будет реализован в будущем</p>
+              <p style={{ fontSize: '14px', color: '#6b7280' }}>Здесь будут храниться документы, созданные для слушателя</p>
+            </div>
+          )}
+
+          {activeTab === 'notes' && (
+            <ListenerNotes listenerId={listener.id} />
+          )}
+        </div>
 
         <div style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
           <button onClick={onEdit} className="btn btn-kiu">Редактировать</button>

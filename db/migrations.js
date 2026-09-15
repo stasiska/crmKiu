@@ -369,6 +369,63 @@ async function runMigrations(pool) {
 
         await client.query(`CREATE INDEX IF NOT EXISTS idx_group_documents_group_id ON group_documents(group_id)`);
 
+        // Добавление поля manager_name в таблицу groups
+        await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='groups' AND column_name='manager_name') THEN
+          ALTER TABLE groups ADD COLUMN manager_name VARCHAR(255);
+        END IF;
+      END $$;
+    `);
+
+        // Добавление полей финансовых данных в таблицу group_listeners
+        await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='group_listeners' AND column_name='contract_amount') THEN
+          ALTER TABLE group_listeners ADD COLUMN contract_amount DECIMAL(10,2);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='group_listeners' AND column_name='paid_amount') THEN
+          ALTER TABLE group_listeners ADD COLUMN paid_amount DECIMAL(10,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='group_listeners' AND column_name='payment_type') THEN
+          ALTER TABLE group_listeners ADD COLUMN payment_type VARCHAR(50);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='group_listeners' AND column_name='comment') THEN
+          ALTER TABLE group_listeners ADD COLUMN comment TEXT;
+        END IF;
+      END $$;
+    `);
+
+        // Добавление поля course_price в таблицу groups
+        await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='groups' AND column_name='course_price') THEN
+          ALTER TABLE groups ADD COLUMN course_price DECIMAL(10,2);
+        END IF;
+      END $$;
+    `);
+
+        // Таблица listener_notes
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS listener_notes (
+        id SERIAL PRIMARY KEY,
+        listener_id INTEGER NOT NULL REFERENCES listeners(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL CHECK (type IN ('note', 'plan')),
+        date TIMESTAMP,
+        note TEXT NOT NULL,
+        executor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        file_link VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_notes_listener_id ON listener_notes(listener_id)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_notes_created_at ON listener_notes(created_at)`);
+
         // Вставка дефолтного администратора, если его нет
         await client.query(`
       INSERT INTO users (email, password_hash, name, role)

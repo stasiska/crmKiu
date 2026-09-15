@@ -1,0 +1,48 @@
+.listener-card-modal {
+  min-height: 500px;
+}
+
+.listener-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+  color: #1f2937;
+  background: #f9fafb;
+}
+
+.tab-btn.active {
+  color: #1557a6;
+  border-bottom-color: #1557a6;
+}
+
+.tab-content {
+  min-height: 400px;
+  padding-top: 10px;
+}
+
+.documents-placeholder {
+  text-align: center;
+  padding: 60px 20px;
+  color: #1f2937;
+}
+
+.documents-placeholder p {
+  margin: 10px 0;
+}

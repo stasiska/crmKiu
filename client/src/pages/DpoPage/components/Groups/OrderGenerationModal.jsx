@@ -5,8 +5,7 @@ import Toast from '../../../../components/Toast';
 export default function OrderGenerationModal({ groupId, onClose, onSuccess }) {
   const [form, setForm] = useState({
     templateType: 'enrollment_order',
-    orderNumber: '',
-    deputyDirectorName: 'Н.Г. Сидоров'
+    orderNumber: ''
   });
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -106,6 +105,12 @@ export default function OrderGenerationModal({ groupId, onClose, onSuccess }) {
         case 'diploma_order_kazan':
           documentType = 'Приказ о выдаче документов (Казань)';
           break;
+        case 'diploma_order_split':
+          documentType = 'Приказ о выдаче документов (раздельный)';
+          break;
+        case 'expulsion_order':
+          documentType = 'Приказ об отчислении';
+          break;
         default:
           documentType = 'Документ';
       }
@@ -150,6 +155,8 @@ export default function OrderGenerationModal({ groupId, onClose, onSuccess }) {
                 <option value="enrollment_order">О зачислении</option>
                 <option value="diploma_order">О выдаче документов</option>
                 <option value="diploma_order_kazan">О выдаче документов (Казань)</option>
+                <option value="diploma_order_split">О выдаче документов (раздельный)</option>
+                <option value="expulsion_order">Об отчислении</option>
               </select>
             </FormField>
 
@@ -162,18 +169,6 @@ export default function OrderGenerationModal({ groupId, onClose, onSuccess }) {
                 placeholder="Например: ПП 146/1/2026"
               />
             </FormField>
-
-            {form.templateType === 'diploma_order' && (
-              <FormField label="ФИО заместителя директора">
-                <input
-                  type="text"
-                  name="deputyDirectorName"
-                  value={form.deputyDirectorName}
-                  onChange={handleChange}
-                  placeholder="Н.Г. Сидоров"
-                />
-              </FormField>
-            )}
 
             <div className="button-group">
               <button
