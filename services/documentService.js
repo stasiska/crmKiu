@@ -248,6 +248,126 @@ function formatDateRu(isoDate) {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} года`;
 }
 
+/**
+ * Генерация договора для слушателя
+ */
+async function generateListenerContract(listenerId, groupId, options) {
+  const listener = await db.getListenerById(listenerId);
+  if (!listener) throw new Error('Слушатель не найден');
+
+  const group = await db.getGroupById(groupId);
+  if (!group) throw new Error('Группа не найдена');
+
+  // Получаем финансовые данные из связи слушатель-группа
+  const groupListenerData = await db.getGroupListenerData(groupId, listenerId);
+
+  const template = await db.getDocumentTemplate('listener_contract');
+  if (!template) throw new Error('Шаблон "listener_contract" не найден');
+
+  const data = buildListenerContractData(listener, group, groupListenerData, options);
+  return renderTemplate(template.file_data, data);
+}
+
+function buildListenerContractData(listener, group, groupListenerData, options) {
+  const contractDate = options.contractDate ? new Date(options.contractDate) : new Date();
+  const startDate = group.start_date ? new Date(group.start_date) : new Date();
+  const endDate = group.end_date ? new Date(group.end_date) : new Date();
+
+  const price = groupListenerData?.contract_amount || group.course_price || 0;
+
+  // Преобразование формата обучения
+  const studyForm = formatStudyForm(group.format);
+
+  return {
+    contract_number: options.contractNumber || '',
+    contract_day: contractDate.getDate(),
+    contract_month: getMonthNameGenitive(contractDate.getMonth()),
+    contract_year: contractDate.getFullYear(),
+
+    customer_full_name: options.customerFullName || `${listener.last_name || ''} ${listener.first_name || ''} ${listener.middle_name || ''}`.trim(),
+    customer_passport: options.customerPassport || '',
+
+    listener_full_name: `${listener.last_name || ''} ${listener.first_name || ''} ${listener.middle_name || ''}`.trim(),
+
+    study_form: studyForm,
+    course_name: group.course_name || '',
+    hours: group.hours || '',
+
+    start_day: startDate.getDate(),
+    start_month: getMonthNameGenitive(startDate.getMonth()),
+    start_year: startDate.getFullYear(),
+
+    end_day: endDate.getDate(),
+    end_month: getMonthNameGenitive(endDate.getMonth()),
+    end_year: endDate.getFullYear(),
+
+    course_price: parseFloat(price).toFixed(2),
+    course_price_words: numberToWords(price),
+  };
+}
+
+function formatStudyForm(format) {
+  if (!format) return '';
+
+  const formatLower = format.toLowerCase();
+
+  // Если содержит "аудитория" или "очн" - очная
+  if (formatLower.includes('аудитория') || formatLower.includes('очн')) {
+    return 'очная';
+  }
+
+  // Если содержит "дистант" или "заочн" - заочная
+  if (formatLower.includes('дистант') || formatLower.includes('заочн')) {
+    return 'заочная';
+  }
+
+  // Если содержит "онлайн" - заочная с применением дистанционных технологий
+  if (formatLower.includes('онлайн')) {
+    return 'заочная с применением дистанционных образовательных технологий';
+  }
+
+  // По умолчанию возвращаем как есть
+  return format;
+}
+
+function getMonthNameGenitive(monthIndex) {
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+                  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  return months[monthIndex] || '';
+}
+
+function numberToWords(num) {
+  // Упрощенная функция для преобразования числа в слова
+  // Для полноценной реализации можно использовать библиотеку rubles
+  const n = Math.floor(num);
+  if (n === 0) return 'ноль';
+
+  // Базовая реализация для чисел до 1000000
+  const ones = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+  const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+  const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+  if (n < 10) return ones[n];
+  if (n < 20) {
+    const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать',
+                   'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+    return teens[n - 10];
+  }
+  if (n < 100) {
+    const t = Math.floor(n / 10);
+    const o = n % 10;
+    return tens[t] + (o > 0 ? ' ' + ones[o] : '');
+  }
+  if (n < 1000) {
+    const h = Math.floor(n / 100);
+    const rest = n % 100;
+    return hundreds[h] + (rest > 0 ? ' ' + numberToWords(rest) : '');
+  }
+
+  // Для больших чисел - упрощенный вариант
+  return n.toString();
+}
+
 function renderTemplate(templateBuffer, data) {
   const zip = new PizZip(templateBuffer);
   const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
@@ -261,4 +381,5 @@ module.exports = {
   generateDiplomaOrderKazan,
   generateExpulsionOrder,
   generateDiplomaOrderSplit,
+  generateListenerContract,
 };

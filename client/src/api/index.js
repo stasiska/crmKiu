@@ -132,6 +132,10 @@ export const deleteListenerNote = (listenerId, noteId) =>
 export const fetchListenerGroupHistory = (listenerId, params) =>
   api.get(`/listeners/${listenerId}/groups`, { params }).then(r => r.data);
 
+// ===== Документы слушателя =====
+export const generateListenerContract = (listenerId, data) =>
+  api.post(`/listeners/${listenerId}/documents/contract`, data, { responseType: 'blob' }).then(r => r.data);
+
 // === Таски =====
 export const fetchTasks = (status) => {
   const url = status ? `/tasks?status=${status}` : '/tasks';

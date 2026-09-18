@@ -352,6 +352,10 @@ router.delete('/listeners/:id/notes/:noteId', listenerNoteCtrl.deleteListenerNot
 // ===== История групп слушателя =====
 router.get('/listeners/:id/groups', listenerNoteCtrl.getListenerGroupHistory);
 
+// ===== Документы слушателей =====
+const listenerDocumentCtrl = require('../controllers/listenerDocumentController');
+router.post('/listeners/:id/documents/contract', listenerDocumentCtrl.generateContract);
+
 // ===== Приказы (документы групп) =====
 const orderCtrl = require('../controllers/orderController');
 const { generateOrderSchema, attachOrderSchema, uploadOrderSchema } = require('../validators/orderValidator');

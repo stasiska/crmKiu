@@ -1196,6 +1196,16 @@ async function updateGroupListener(groupId, listenerId, updates) {
   return res.rowCount > 0;
 }
 
+async function getGroupListenerData(groupId, listenerId) {
+  const res = await query(
+    `SELECT contract_amount, paid_amount, payment_type, comment
+     FROM group_listeners
+     WHERE group_id = $1 AND listener_id = $2`,
+    [groupId, listenerId]
+  );
+  return res.rows[0] || null;
+}
+
 async function clearGroupListeners(groupId) {
   const res = await query('DELETE FROM group_listeners WHERE group_id = $1', [groupId]);
   return res.rowCount;
@@ -1723,6 +1733,7 @@ module.exports = {
   addListenersToGroup,
   removeListenerFromGroup,
   updateGroupListener,
+  getGroupListenerData,
   clearGroupListeners,
   checkListenersExist,
 

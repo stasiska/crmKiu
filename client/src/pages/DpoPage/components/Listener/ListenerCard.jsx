@@ -1,10 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ListenerGroupHistory from '../Listeners/ListenerGroupHistory';
 import ListenerNotes from './ListenerNotes';
+import ContractGenerationModal from '../Listeners/ContractGenerationModal';
+import { fetchListenerGroupHistory } from '../../../../api';
 import './ListenerCard.css';
 
 const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization }) => {
   const [activeTab, setActiveTab] = useState('info');
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [groups, setGroups] = useState([]);
+
+  useEffect(() => {
+    if (activeTab === 'documents') {
+      loadGroups();
+    }
+  }, [activeTab]);
+
+  const loadGroups = async () => {
+    try {
+      console.log('Загрузка групп для слушателя:', listener.id);
+      const response = await fetchListenerGroupHistory(listener.id, { limit: 100 });
+      console.log('Ответ от API:', response);
+      setGroups(response.data || []);
+      console.log('Установлено групп:', response.data?.length || 0);
+    } catch (err) {
+      console.error('Ошибка загрузки групп:', err);
+    }
+  };
+
+  const handleGenerateContract = (groupId) => {
+    console.log('handleGenerateContract вызван с groupId:', groupId);
+    console.log('Группы:', groups);
+    console.log('Найденная группа:', groups.find(g => g.group_id === groupId));
+    setSelectedGroupId(groupId);
+    setShowContractModal(true);
+    console.log('Модальное окно должно открыться');
+  };
 
   const formatDate = (date) => date ? new Date(date).toLocaleDateString('ru-RU') : '—';
 
@@ -120,9 +152,62 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
           )}
 
           {activeTab === 'documents' && (
-            <div className="documents-placeholder">
-              <p>Раздел прикрепленных документов будет реализован в будущем</p>
-              <p style={{ fontSize: '14px', color: '#6b7280' }}>Здесь будут храниться документы, созданные для слушателя</p>
+            <div>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>
+                Генерация документов
+              </h4>
+
+              {console.log('Вкладка документы, количество групп:', groups.length, groups)}
+
+              {groups.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280', background: '#f9fafb', borderRadius: '8px' }}>
+                  <p>Слушатель не зачислен ни в одну группу</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>
+                    Добавьте слушателя в группу, чтобы сгенерировать договор
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {groups.map((group) => {
+                    console.log('Рендер группы:', group.id, group.course_name);
+                    return (
+                      <div
+                        key={group.id}
+                        style={{
+                          padding: '16px',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          background: '#fff'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>
+                            {group.course_name}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                            {group.start_date && new Date(group.start_date).toLocaleDateString('ru-RU')}
+                            {' — '}
+                            {group.end_date && new Date(group.end_date).toLocaleDateString('ru-RU')}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            console.log('Клик по кнопке договора, group id:', group.id);
+                            handleGenerateContract(group.id);
+                          }}
+                          className="btn btn-kiu"
+                          style={{ fontSize: '14px' }}
+                        >
+                          📄 Договор
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -137,6 +222,18 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
           <button onClick={onClose} style={{ background: '#e5e7eb', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>Закрыть</button>
         </div>
       </div>
+
+      {showContractModal && selectedGroupId && (
+        <ContractGenerationModal
+          isOpen={showContractModal}
+          listener={listener}
+          group={groups.find(g => g.id === selectedGroupId)}
+          onClose={() => {
+            setShowContractModal(false);
+            setSelectedGroupId(null);
+          }}
+        />
+      )}
     </div>
   );
 };
