@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ListenerGroupHistory from '../Listeners/ListenerGroupHistory';
 import ListenerNotes from './ListenerNotes';
 import ContractGenerationModal from '../Listeners/ContractGenerationModal';
-import { fetchListenerGroupHistory } from '../../../../api';
+import { fetchListenerGroupHistory, fetchListenerDocuments, downloadListenerDocument, deleteListenerDocument, uploadListenerDocument } from '../../../../api';
 import './ListenerCard.css';
 
 const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization }) => {
@@ -10,10 +10,13 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
   const [showContractModal, setShowContractModal] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [groups, setGroups] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [uploadingGroupId, setUploadingGroupId] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'documents') {
       loadGroups();
+      loadDocuments();
     }
   }, [activeTab]);
 
@@ -26,6 +29,74 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
       console.log('Установлено групп:', response.data?.length || 0);
     } catch (err) {
       console.error('Ошибка загрузки групп:', err);
+    }
+  };
+
+  const loadDocuments = async () => {
+    try {
+      const response = await fetchListenerDocuments(listener.id);
+      setDocuments(response.data || []);
+    } catch (err) {
+      console.error('Ошибка загрузки документов:', err);
+    }
+  };
+
+  const handleDownloadDocument = async (docId, fileName) => {
+    try {
+      const blob = await downloadListenerDocument(listener.id, docId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Ошибка скачивания документа:', err);
+      alert('Ошибка скачивания документа');
+    }
+  };
+
+  const handleDeleteDocument = async (docId) => {
+    if (!window.confirm('Удалить документ?')) return;
+
+    try {
+      await deleteListenerDocument(listener.id, docId);
+      loadDocuments(); // Перезагружаем список документов
+    } catch (err) {
+      console.error('Ошибка удаления документа:', err);
+      alert('Ошибка удаления документа');
+    }
+  };
+
+  const handleContractGenerated = () => {
+    loadDocuments(); // Перезагружаем список документов после генерации
+  };
+
+  const handleUploadDocument = async (groupId, event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setUploadingGroupId(groupId);
+
+    try {
+      const group = groups.find(g => g.id === groupId);
+      await uploadListenerDocument(listener.id, file, {
+        group_id: groupId,
+        document_type: 'contract',
+        contract_date: group?.start_date || null,
+        customer_full_name: `${listener.last_name} ${listener.first_name} ${listener.middle_name || ''}`.trim()
+      });
+
+      loadDocuments(); // Обновляем список документов
+      alert('Документ успешно загружен');
+    } catch (err) {
+      console.error('Ошибка загрузки документа:', err);
+      alert('Ошибка загрузки документа: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setUploadingGroupId(null);
+      event.target.value = ''; // Сбрасываем input
     }
   };
 
@@ -153,6 +224,73 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
 
           {activeTab === 'documents' && (
             <div>
+              {/* Список сгенерированных документов */}
+              {documents.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>
+                    Сгенерированные документы
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {documents.map((doc) => (
+                      <div
+                        key={doc.id}
+                        style={{
+                          padding: '12px 16px',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          background: '#f9fafb'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 500, fontSize: '14px', marginBottom: '4px' }}>
+                            {doc.document_type === 'contract' ? '📄 Договор' : '📋 Документ'}
+                            {doc.course_name && ` — ${doc.course_name}`}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                            {doc.contract_date && `Дата: ${new Date(doc.contract_date).toLocaleDateString('ru-RU')}`}
+                            {doc.customer_full_name && ` • Заказчик: ${doc.customer_full_name}`}
+                            {doc.created_at && ` • Создан: ${new Date(doc.created_at).toLocaleDateString('ru-RU')}`}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => handleDownloadDocument(doc.id, doc.file_name)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#1557a6',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '13px'
+                            }}
+                          >
+                            ⬇ Скачать
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#dc2626',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '13px'
+                            }}
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>
                 Генерация документов
               </h4>
@@ -193,16 +331,40 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
                             {group.end_date && new Date(group.end_date).toLocaleDateString('ru-RU')}
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            console.log('Клик по кнопке договора, group id:', group.id);
-                            handleGenerateContract(group.id);
-                          }}
-                          className="btn btn-kiu"
-                          style={{ fontSize: '14px' }}
-                        >
-                          📄 Договор
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => {
+                              console.log('Клик по кнопке договора, group id:', group.id);
+                              handleGenerateContract(group.id);
+                            }}
+                            className="btn btn-kiu"
+                            style={{ fontSize: '14px' }}
+                          >
+                            📄 Сгенерировать
+                          </button>
+                          <label
+                            style={{
+                              padding: '8px 16px',
+                              background: uploadingGroupId === group.id ? '#9ca3af' : '#059669',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: uploadingGroupId === group.id ? 'not-allowed' : 'pointer',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              display: 'inline-block'
+                            }}
+                          >
+                            {uploadingGroupId === group.id ? '⏳ Загрузка...' : '⬆ Загрузить'}
+                            <input
+                              type="file"
+                              accept=".docx"
+                              onChange={(e) => handleUploadDocument(group.id, e)}
+                              disabled={uploadingGroupId === group.id}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                        </div>
                       </div>
                     );
                   })}
@@ -228,6 +390,7 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
           isOpen={showContractModal}
           listener={listener}
           group={groups.find(g => g.id === selectedGroupId)}
+          onContractGenerated={handleContractGenerated}
           onClose={() => {
             setShowContractModal(false);
             setSelectedGroupId(null);

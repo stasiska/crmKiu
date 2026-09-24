@@ -1337,6 +1337,101 @@ async function getListenerGroupHistory(listenerId, filters = {}) {
   };
 }
 
+// ===== LISTENER DOCUMENTS =====
+
+async function getListenerDocuments(listenerId, filters = {}) {
+  const { page = 1, limit = 50, document_type } = filters;
+  const offset = (page - 1) * limit;
+
+  let whereClause = 'WHERE ld.listener_id = $1';
+  const params = [listenerId];
+
+  if (document_type) {
+    params.push(document_type);
+    whereClause += ` AND ld.document_type = $${params.length}`;
+  }
+
+  const countRes = await query(
+    `SELECT COUNT(*) as count FROM listener_documents ld ${whereClause}`,
+    params
+  );
+  const total = parseInt(countRes.rows[0]?.count || 0, 10);
+
+  const dataRes = await query(
+    `SELECT ld.*,
+     g.course_name,
+     u.name as creator_name
+     FROM listener_documents ld
+     LEFT JOIN groups g ON ld.group_id = g.id
+     LEFT JOIN users u ON ld.created_by = u.id
+     ${whereClause}
+     ORDER BY ld.created_at DESC
+     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, limit, offset]
+  );
+
+  return {
+    data: dataRes.rows,
+    total,
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10)
+  };
+}
+
+async function getListenerDocumentById(id) {
+  const res = await query(
+    `SELECT ld.*,
+     g.course_name,
+     u.name as creator_name
+     FROM listener_documents ld
+     LEFT JOIN groups g ON ld.group_id = g.id
+     LEFT JOIN users u ON ld.created_by = u.id
+     WHERE ld.id = $1`,
+    [id]
+  );
+  return res.rows[0] || null;
+}
+
+async function createListenerDocument(data) {
+  const {
+    listener_id,
+    group_id,
+    document_type,
+    file_name,
+    file_path,
+    file_size,
+    contract_number,
+    contract_date,
+    customer_full_name,
+    created_by
+  } = data;
+
+  const res = await query(
+    `INSERT INTO listener_documents (
+      listener_id, group_id, document_type, file_name, file_path, file_size,
+      contract_number, contract_date, customer_full_name, created_by
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+    [
+      listener_id,
+      group_id || null,
+      document_type,
+      file_name,
+      file_path,
+      file_size || null,
+      contract_number || null,
+      contract_date || null,
+      customer_full_name || null,
+      created_by || null
+    ]
+  );
+  return res.rows[0].id;
+}
+
+async function deleteListenerDocument(id) {
+  const res = await query('DELETE FROM listener_documents WHERE id = $1', [id]);
+  return res.rowCount > 0;
+}
+
 // ===== BRANCHES =====
 
 async function getBranches() {
@@ -1765,6 +1860,12 @@ module.exports = {
   createListenerNote,
   updateListenerNote,
   deleteListenerNote,
+
+  // Listener Documents
+  getListenerDocuments,
+  getListenerDocumentById,
+  createListenerDocument,
+  deleteListenerDocument,
 
   // Listener Group History
   getListenerGroupHistory,

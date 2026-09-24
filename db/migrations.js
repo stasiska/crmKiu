@@ -426,6 +426,30 @@ async function runMigrations(pool) {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_notes_listener_id ON listener_notes(listener_id)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_notes_created_at ON listener_notes(created_at)`);
 
+        // Таблица listener_documents (документы слушателей)
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS listener_documents (
+        id SERIAL PRIMARY KEY,
+        listener_id INTEGER NOT NULL REFERENCES listeners(id) ON DELETE CASCADE,
+        group_id INTEGER REFERENCES groups(id) ON DELETE SET NULL,
+        document_type VARCHAR(50) NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        file_size INTEGER,
+        contract_number VARCHAR(100),
+        contract_date DATE,
+        customer_full_name TEXT,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_documents_listener_id ON listener_documents(listener_id)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_documents_group_id ON listener_documents(group_id)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_documents_type ON listener_documents(document_type)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_listener_documents_contract_number ON listener_documents(contract_number)`);
+
         // Вставка дефолтного администратора, если его нет
         await client.query(`
       INSERT INTO users (email, password_hash, name, role)

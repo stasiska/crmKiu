@@ -354,7 +354,23 @@ router.get('/listeners/:id/groups', listenerNoteCtrl.getListenerGroupHistory);
 
 // ===== Документы слушателей =====
 const listenerDocumentCtrl = require('../controllers/listenerDocumentController');
+const multerListenerDocs = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      cb(null, true);
+    } else {
+      cb(new Error('Разрешены только файлы .docx'));
+    }
+  }
+});
+
 router.post('/listeners/:id/documents/contract', listenerDocumentCtrl.generateContract);
+router.post('/listeners/:id/documents/upload', multerListenerDocs.single('file'), listenerDocumentCtrl.uploadDocument);
+router.get('/listeners/:id/documents', listenerDocumentCtrl.getDocuments);
+router.get('/listeners/:id/documents/:docId/download', listenerDocumentCtrl.downloadDocument);
+router.delete('/listeners/:id/documents/:docId', listenerDocumentCtrl.deleteDocument);
 
 // ===== Приказы (документы групп) =====
 const orderCtrl = require('../controllers/orderController');

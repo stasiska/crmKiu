@@ -136,6 +136,30 @@ export const fetchListenerGroupHistory = (listenerId, params) =>
 export const generateListenerContract = (listenerId, data) =>
   api.post(`/listeners/${listenerId}/documents/contract`, data, { responseType: 'blob' }).then(r => r.data);
 
+export const uploadListenerDocument = (listenerId, file, metadata) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (metadata.group_id) formData.append('group_id', metadata.group_id);
+  if (metadata.contract_date) formData.append('contract_date', metadata.contract_date);
+  if (metadata.customer_full_name) formData.append('customer_full_name', metadata.customer_full_name);
+  if (metadata.document_type) formData.append('document_type', metadata.document_type);
+  return api.post(`/listeners/${listenerId}/documents/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(r => r.data);
+};
+
+export const fetchListenerDocuments = (listenerId, filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.document_type) params.append('document_type', filters.document_type);
+  return api.get(`/listeners/${listenerId}/documents?${params.toString()}`).then(r => r.data);
+};
+
+export const downloadListenerDocument = (listenerId, docId) =>
+  api.get(`/listeners/${listenerId}/documents/${docId}/download`, { responseType: 'blob' }).then(r => r.data);
+
+export const deleteListenerDocument = (listenerId, docId) =>
+  api.delete(`/listeners/${listenerId}/documents/${docId}`).then(r => r.data);
+
 // === Таски =====
 export const fetchTasks = (status) => {
   const url = status ? `/tasks?status=${status}` : '/tasks';

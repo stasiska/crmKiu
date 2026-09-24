@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { generateListenerContract } from '../../../../api';
 import Toast from '../../../../components/Toast';
 
-const ContractGenerationModal = ({ isOpen, onClose, listener, group }) => {
+const ContractGenerationModal = ({ isOpen, onClose, listener, group, onContractGenerated }) => {
   console.log('ContractGenerationModal render:', { isOpen, listener, group });
 
   const [formData, setFormData] = useState({
@@ -49,6 +49,9 @@ const ContractGenerationModal = ({ isOpen, onClose, listener, group }) => {
       document.body.removeChild(a);
 
       setToast({ message: 'Договор успешно сгенерирован', type: 'success' });
+      if (onContractGenerated) {
+        onContractGenerated();
+      }
       setTimeout(() => onClose(), 1500);
     } catch (err) {
       setToast({ message: 'Ошибка генерации: ' + (err.response?.data?.error || err.message), type: 'error' });
