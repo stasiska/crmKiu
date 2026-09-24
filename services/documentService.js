@@ -268,6 +268,85 @@ async function generateListenerContract(listenerId, groupId, options) {
   return renderTemplate(template.file_data, data);
 }
 
+/**
+ * Генерация заявления о зачислении слушателя
+ */
+async function generateListenerApplication(listenerId, groupId) {
+  const listener = await db.getListenerById(listenerId);
+  if (!listener) throw new Error('Слушатель не найден');
+
+  const group = await db.getGroupById(groupId);
+  if (!group) throw new Error('Группа не найдена');
+
+  const template = await db.getDocumentTemplate('listener_application');
+  if (!template) throw new Error('Шаблон "listener_application" не найден');
+
+  const data = buildListenerApplicationData(listener, group);
+  return renderTemplate(template.file_data, data);
+}
+
+function buildListenerApplicationData(listener, group) {
+  const currentDate = new Date();
+
+  // Вычисление возраста
+  let age = '';
+  if (listener.birth_date) {
+    const birthDate = new Date(listener.birth_date);
+    const today = new Date();
+    age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+  }
+
+  // Форматирование даты рождения
+  const birthDate = listener.birth_date ? new Date(listener.birth_date) : null;
+  const birthDateFormatted = birthDate ?
+    `${birthDate.getDate().toString().padStart(2, '0')}.${(birthDate.getMonth() + 1).toString().padStart(2, '0')}.${birthDate.getFullYear()}` : '';
+
+  // Форматирование пола
+  const gender = listener.gender === 'male' ? 'М' : listener.gender === 'female' ? 'Ж' : '';
+
+  return {
+    // ФИО
+    last_name: listener.last_name || '',
+    first_name: listener.first_name || '',
+    middle_name: listener.middle_name || '',
+    full_name: `${listener.last_name || ''} ${listener.first_name || ''} ${listener.middle_name || ''}`.trim(),
+
+    // Личные данные
+    birth_date: birthDateFormatted,
+    age: age.toString(),
+    birth_place: listener.birth_place || '',
+    gender: gender,
+    citizenship: listener.citizenship || '',
+
+    // Контакты
+    phone: listener.phone || '',
+    email: listener.email || '',
+
+    // Адреса
+    residence_address: listener.residence_address || '',
+    registration_address: listener.registration_address || '',
+
+    // Образование
+    education_level: listener.education_level || '',
+    education_series: listener.education_series || '',
+    education_number: listener.education_number || '',
+
+    // Работа
+    snils: listener.snils || '',
+
+    // Курс
+    course_name: group.course_name || '',
+    course_hours: group.hours || '',
+
+    // Текущая дата
+    current_date: `${currentDate.getDate().toString().padStart(2, '0')}.${(currentDate.getMonth() + 1).toString().padStart(2, '0')}.${currentDate.getFullYear()}`
+  };
+}
+
 function buildListenerContractData(listener, group, groupListenerData, options) {
   const contractDate = options.contractDate ? new Date(options.contractDate) : new Date();
   const startDate = group.start_date ? new Date(group.start_date) : new Date();
@@ -369,10 +448,25 @@ function numberToWords(num) {
 }
 
 function renderTemplate(templateBuffer, data) {
-  const zip = new PizZip(templateBuffer);
-  const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-  doc.render(data);
-  return doc.getZip().generate({ type: 'nodebuffer' });
+  try {
+    const zip = new PizZip(templateBuffer);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      nullGetter: () => '' // Заменяет null/undefined на пустую строку
+    });
+    doc.render(data);
+    return doc.getZip().generate({ type: 'nodebuffer' });
+  } catch (error) {
+    // Детальная информация об ошибке
+    if (error.properties && error.properties.errors instanceof Array) {
+      const errorMessages = error.properties.errors.map((err) => {
+        return `Ошибка в поле: ${err.properties.id || 'неизвестно'}, тип: ${err.name}`;
+      }).join('; ');
+      throw new Error(`Ошибка генерации документа: ${errorMessages}`);
+    }
+    throw error;
+  }
 }
 
 module.exports = {
@@ -382,4 +476,5 @@ module.exports = {
   generateExpulsionOrder,
   generateDiplomaOrderSplit,
   generateListenerContract,
+  generateListenerApplication,
 };

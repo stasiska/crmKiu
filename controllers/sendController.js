@@ -2,7 +2,7 @@ const emailService = require('../services/emailService');
 const db = require('../db');
 const config = require('../config');
 
-async function startSend(senderId, recipientIds, subject, bodyTemplate, ignoreDuplicate = false, userId) {
+async function startSend(senderId, recipientIds, subject, bodyTemplate, ignoreDuplicate = false, userId, attachments = []) {
   const recipients = await db.getRecipientsByIds(recipientIds);
 
   if (recipients.length === 0) {
@@ -46,6 +46,7 @@ async function startSend(senderId, recipientIds, subject, bodyTemplate, ignoreDu
     recipients: uniqueRecipients,
     subject,
     bodyTemplate,
+    attachments,
     userId,
   });
 }

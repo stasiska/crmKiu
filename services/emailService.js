@@ -23,7 +23,7 @@ class EmailService extends EventEmitter {
       .replace(/\\r/g, '');   // убираем \r
   }
 
-  async sendBatch({ senderId, recipients, subject, bodyTemplate, onProgress, userId }) {
+  async sendBatch({ senderId, recipients, subject, bodyTemplate, attachments, onProgress, userId }) {
     this.isSending = true;
     this.shouldStop = false;
 
@@ -83,28 +83,40 @@ class EmailService extends EventEmitter {
         }
       }
 
-      // Персонализация с очищенным шаблоном и экранированием для защиты от XSS
+      // Персонализация с условной подстановкой
       const html = cleanedTemplate.replace(/\{([^}]+)\}/g, (match, key) => {
-        const value = recipient[key] || match;
-        // Экранируем HTML для защиты от XSS
+        let value = recipient[key] || match;
+        // Условная логика: если {manager_name} пустое, подставляем "руководителю"
+        if (key === 'manager_name' && (!recipient[key] || recipient[key].trim() === '')) {
+          value = 'руководителю';
+        }
         return he.encode(String(value));
       });
 
-      // Для subject НЕ используем HTML-экранирование (это plain text)
+      // Для subject - условная подстановка без HTML-экранирования
       const subjectPersonalized = subject.replace(/\{([^}]+)\}/g, (match, key) => {
-        const value = recipient[key] || match;
-        // Subject - это plain text, просто возвращаем значение без HTML-экранирования
-        // Защита: nodemailer сам правильно кодирует subject в RFC 2047
+        let value = recipient[key] || match;
+        // Условная логика для subject
+        if (key === 'manager_name' && (!recipient[key] || recipient[key].trim() === '')) {
+          value = 'руководителю';
+        }
         return String(value);
       });
 
       try {
-        const info = await transporter.sendMail({
+        const mailOptions = {
           from: sender.email,
           to: recipient.email,
           subject: subjectPersonalized,
           html,
-        });
+        };
+
+        // Добавляем вложения если они есть
+        if (attachments && attachments.length > 0) {
+          mailOptions.attachments = attachments;
+        }
+
+        const info = await transporter.sendMail(mailOptions);
         await db.addLog({
           recipient_email: recipient.email,
           sender_id: senderId,

@@ -68,62 +68,62 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
               <input name="middle_name" defaultValue={initialData?.middle_name || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дата рождения</label>
-              <input type="date" name="birth_date" defaultValue={initialData?.birth_date || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дата рождения *</label>
+              <input type="date" name="birth_date" defaultValue={initialData?.birth_date || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Пол</label>
-              <select name="gender" defaultValue={initialData?.gender || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Пол *</label>
+              <select name="gender" defaultValue={initialData?.gender || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }}>
                 <option value="">Не выбрано</option>
                 <option value="male">Мужской</option>
                 <option value="female">Женский</option>
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Гражданство</label>
-              <input name="citizenship" defaultValue={initialData?.citizenship || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Гражданство *</label>
+              <input name="citizenship" defaultValue={initialData?.citizenship || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Телефон</label>
-              <input name="phone" defaultValue={initialData?.phone || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Телефон *</label>
+              <input name="phone" defaultValue={initialData?.phone || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Email</label>
-              <input name="email" defaultValue={initialData?.email || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Email *</label>
+              <input type="email" name="email" defaultValue={initialData?.email || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
           </Section>
 
           <Section title="Документы">
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Документ</label>
-              <input name="identity_document" defaultValue={initialData?.identity_document || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Документ *</label>
+              <input name="identity_document" defaultValue={initialData?.identity_document || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Серия документа</label>
-              <input name="document_series" defaultValue={initialData?.document_series || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Серия документа *</label>
+              <input name="document_series" defaultValue={initialData?.document_series || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Номер документа</label>
-              <input name="document_number" defaultValue={initialData?.document_number || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Номер документа *</label>
+              <input name="document_number" defaultValue={initialData?.document_number || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Кем выдан</label>
-              <input name="issued_by" defaultValue={initialData?.issued_by || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Кем выдан *</label>
+              <input name="issued_by" defaultValue={initialData?.issued_by || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>СНИЛС</label>
-              <input name="snils" defaultValue={initialData?.snils || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>СНИЛС *</label>
+              <input name="snils" defaultValue={initialData?.snils || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
           </Section>
 
           <Section title="Адреса">
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Адрес проживания</label>
-              <input name="residence_address" defaultValue={initialData?.residence_address || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Адрес проживания *</label>
+              <input name="residence_address" defaultValue={initialData?.residence_address || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Адрес регистрации</label>
-              <input name="registration_address" defaultValue={initialData?.registration_address || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Адрес регистрации *</label>
+              <input name="registration_address" defaultValue={initialData?.registration_address || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
           </Section>
 

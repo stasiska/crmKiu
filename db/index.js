@@ -145,18 +145,19 @@ async function addRecipients(rows) {
       const exists = await client.query('SELECT id FROM recipients WHERE email = $1', [email]);
       if (exists.rows.length > 0) continue;
 
-      const name = row.name || row.имя || row.фио || '';
-      const city = row.city || row.город || row.округ || row.регион || '';
-      const specialization = row.specialization || row.специализация || row.профессия || row.role || '';
       const organization = row.organization || row.организация || row.company || row.компания || row.org || '';
-      const phone = row.phone || row.телефон || '';
       const comment = row.comment || row.комментарий || '';
+      const organizationAddress = row.organization_address || row['адрес организации'] || row.адрес_организации || '';
+      const position = row.position || row.должность || '';
+      const managerName = row.manager_name || row['фио руководителя'] || row.руководитель || '';
+      const direction = row.direction || row.направление || row['наименование направления'] || '';
+      const organizationPhone = row.organization_phone || row['телефон организации'] || row.телефон_организации || '';
       const extra = JSON.stringify(row);
 
       const res = await client.query(
-        `INSERT INTO recipients (email, name, city, specialization, organization, phone, comment, extra)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-        [email, name, city, specialization, organization, phone, comment, extra]
+        `INSERT INTO recipients (email, organization, comment, extra, organization_address, position, manager_name, direction, organization_phone)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+        [email, organization, comment, extra, organizationAddress, position, managerName, direction, organizationPhone]
       );
       inserted.push({ id: res.rows[0].id, email });
     }
@@ -170,21 +171,33 @@ async function addRecipients(rows) {
   }
 }
 
+async function createRecipient(data) {
+  const { email, organization, comment, organization_address, position, manager_name, direction, organization_phone } = data;
+
+  if (!email) {
+    throw new Error('Email обязателен');
+  }
+
+  // Проверка существования
+  const exists = await query('SELECT id FROM recipients WHERE email = $1', [email]);
+  if (exists.rows.length > 0) {
+    throw new Error('Получатель с таким email уже существует');
+  }
+
+  const res = await query(
+    `INSERT INTO recipients (email, organization, comment, organization_address, position, manager_name, direction, organization_phone)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [email, organization || '', comment || '', organization_address || '', position || '', manager_name || '', direction || '', organization_phone || '']
+  );
+
+  return res.rows[0];
+}
+
 async function getRecipientsByIds(ids) {
   if (!ids || ids.length === 0) return [];
   const placeholders = ids.map((_, i) => `$${i+1}`).join(',');
   const res = await query(`SELECT * FROM recipients WHERE id IN (${placeholders})`, ids);
   return res.rows;
-}
-
-async function getDistinctCities() {
-  const res = await query('SELECT DISTINCT city FROM recipients WHERE city IS NOT NULL AND city != \'\'');
-  return res.rows.map(r => ({ city: r.city }));
-}
-
-async function getDistinctSpecializations() {
-  const res = await query('SELECT DISTINCT specialization FROM recipients WHERE specialization IS NOT NULL AND specialization != \'\'');
-  return res.rows.map(r => ({ specialization: r.specialization }));
 }
 
 async function getDistinctOrganizations() {
@@ -199,6 +212,37 @@ async function countRecipients() {
 
 async function updateRecipientComment(id, comment) {
   const res = await query('UPDATE recipients SET comment = $1 WHERE id = $2', [comment, id]);
+  return res.rowCount > 0;
+}
+
+async function updateRecipient(id, updates) {
+  const allowed = [
+    'organization', 'comment',
+    'organization_address', 'position', 'manager_name', 'direction', 'organization_phone'
+  ];
+  const filtered = Object.keys(updates)
+    .filter(key => allowed.includes(key))
+    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
+
+  const fields = [];
+  const values = [];
+  let idx = 1;
+
+  for (const [key, val] of Object.entries(filtered)) {
+    fields.push(`${key} = $${idx}`);
+    values.push(val);
+    idx++;
+  }
+
+  if (fields.length === 0) return false;
+  values.push(id);
+  const sql = `UPDATE recipients SET ${fields.join(', ')} WHERE id = $${idx}`;
+  const res = await query(sql, values);
+  return res.rowCount > 0;
+}
+
+async function deleteRecipient(id) {
+  const res = await query('DELETE FROM recipients WHERE id = $1', [id]);
   return res.rowCount > 0;
 }
 
@@ -1319,7 +1363,7 @@ async function getListenerGroupHistory(listenerId, filters = {}) {
   const total = parseInt(countRes.rows[0]?.count || 0, 10);
 
   const dataRes = await query(
-    `SELECT g.id, g.course_name, g.start_date, g.end_date, g.course_price,
+    `SELECT g.id, g.course_name, g.start_date, g.end_date, g.course_price, g.format,
      gl.contract_amount, gl.paid_amount, gl.payment_type, gl.comment, gl.joined_at
      FROM group_listeners gl
      JOIN groups g ON gl.group_id = g.id
@@ -1740,12 +1784,13 @@ module.exports = {
   // Recipients
   getRecipients,
   addRecipients,
+  createRecipient,
   getRecipientsByIds,
-  getDistinctCities,
-  getDistinctSpecializations,
   getDistinctOrganizations,
   countRecipients,
   updateRecipientComment,
+  updateRecipient,
+  deleteRecipient,
 
   // Logs
   addLog,

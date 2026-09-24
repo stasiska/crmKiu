@@ -43,6 +43,8 @@ export const fetchFiltersOptions = () => api.get('/recipients/filters').then(r =
 export const fetchRecipientOrganizations = () => api.get('/recipients/organizations').then(r => r.data);
 export const updateRecipientComment = (id, comment) =>
   api.put(`/recipients/${id}/comment`, { comment }).then(r => r.data);
+export const updateRecipient = (id, data) =>
+  api.put(`/recipients/${id}`, data).then(r => r.data);
 
 // ===== ШАБЛОНЫ =====
 export const fetchTemplates = () => api.get('/templates').then(r => r.data);
@@ -55,7 +57,24 @@ export const deleteTemplate = (id) => api.delete(`/templates/${id}`).then(r => r
 export const clearLogs = () => api.delete('/logs').then(r => r.data);
 
 // ===== ОТПРАВКА =====
-export const sendEmails = (payload) => api.post('/send', payload).then(r => r.data);
+export const sendEmails = (payload) => {
+  const formData = new FormData();
+  formData.append('senderId', payload.senderId);
+  formData.append('recipientIds', JSON.stringify(payload.recipientIds));
+  formData.append('subject', payload.subject);
+  formData.append('body', payload.body);
+  formData.append('ignoreDuplicate', payload.ignoreDuplicate);
+
+  if (payload.attachments && payload.attachments.length > 0) {
+    payload.attachments.forEach(file => {
+      formData.append('attachments', file);
+    });
+  }
+
+  return api.post('/send', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(r => r.data);
+};
 export const stopSending = () => api.post('/send/stop').then(r => r.data);
 
 // ===== ОЧИСТКА БАЗЫ =====
@@ -135,6 +154,10 @@ export const fetchListenerGroupHistory = (listenerId, params) =>
 // ===== Документы слушателя =====
 export const generateListenerContract = (listenerId, data) =>
   api.post(`/listeners/${listenerId}/documents/contract`, data, { responseType: 'blob' }).then(r => r.data);
+
+export const generateListenerApplication = (listenerId, data) =>
+  api.post(`/listeners/${listenerId}/documents/application`, data, { responseType: 'blob' }).then(r => r.data);
+
 
 export const uploadListenerDocument = (listenerId, file, metadata) => {
   const formData = new FormData();

@@ -7,10 +7,12 @@ import RecipientsTable from './components/RecipientsTable';
 import EmailForm from './components/EmailForm';
 import ProgressLog from './components/ProgressLog';
 import ReminderModal from './components/ReminderModal';
+import AddRecipientModal from './components/AddRecipientModal';
 
 const MailingContent = () => {
-  const { loading, error } = useContext(AppContext);
+  const { loading, error, loadRecipients } = useContext(AppContext);
   const [remindRecipient, setRemindRecipient] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   if (loading) return <div className="loading">Загрузка...</div>;
   if (error) return <div className="text-danger">Ошибка: {error}</div>;
@@ -128,18 +130,38 @@ const MailingContent = () => {
             <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Получатели</h2>
             <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '13px' }}>Фильтрация и выбор контактов для рассылки</p>
           </div>
-          <span className="section-number" style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '34px',
-            height: '34px',
-            borderRadius: '8px',
-            background: '#eaf3ff',
-            color: '#1557a6',
-            fontSize: '12px',
-            fontWeight: 800
-          }}>03</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding: '8px 14px',
+                background: '#16845b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              Добавить получателя
+            </button>
+            <span className="section-number" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '34px',
+              height: '34px',
+              borderRadius: '8px',
+              background: '#eaf3ff',
+              color: '#1557a6',
+              fontSize: '12px',
+              fontWeight: 800
+            }}>03</span>
+          </div>
         </div>
         <Filters />
         <RecipientsTable  onRemind={handleRemind}/>
@@ -150,14 +172,23 @@ const MailingContent = () => {
 
       {/* КАРТОЧКА 5: Прогресс */}
       <ProgressLog />
-      {/* Модальное окно для напоминани */}
-    {remindRecipient && (
-    <ReminderModal
-    recipient={remindRecipient}
-    onClose={closeReminder}
-    onSuccess={handleReminderSuccess}
-      />
-    )}
+
+      {/* Модальное окно для напоминания */}
+      {remindRecipient && (
+        <ReminderModal
+          recipient={remindRecipient}
+          onClose={closeReminder}
+          onSuccess={handleReminderSuccess}
+        />
+      )}
+
+      {/* Модальное окно для добавления получателя */}
+      {showAddModal && (
+        <AddRecipientModal
+          onClose={() => setShowAddModal(false)}
+          onSaved={loadRecipients}
+        />
+      )}
     </div>
   );
 };

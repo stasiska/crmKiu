@@ -1,6 +1,9 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { AppContext } from '../../../context/AppContext';
+import api from '../../../api';
 import CommentsModal from './CommentsModal';
+import RecipientEditModal from './RecipientEditModal';
+import RecipientActionsModal from './RecipientActionsModal';
 
 const RecipientsTable = ({ onRemind }) => {
   const {
@@ -8,13 +11,25 @@ const RecipientsTable = ({ onRemind }) => {
     selectedRecipientIds,
     setSelectedRecipientIds,
     handleClearLogs,
+    loadRecipients,
   } = useContext(AppContext);
 
   const [commentModal, setCommentModal] = useState(null);
+  const [editModal, setEditModal] = useState(null);
+  const [actionsModal, setActionsModal] = useState(null);
 
   const availableCount = useMemo(() => {
     return recipients.filter(r => !r.hasSent).length;
   }, [recipients]);
+
+  const handleDeleteRecipient = async (recipient) => {
+    try {
+      await api.delete(`/recipients/${recipient.id}`);
+      await loadRecipients();
+    } catch (err) {
+      alert('Ошибка удаления: ' + (err.response?.data?.error || err.message));
+    }
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -126,6 +141,7 @@ const RecipientsTable = ({ onRemind }) => {
           borderRadius: '9px',
           maxHeight: '500px',
           overflowY: 'auto',
+          position: 'relative'
         }}
       >
         <table
@@ -149,11 +165,12 @@ const RecipientsTable = ({ onRemind }) => {
                 <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} />
               </th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Email</th>
-              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Имя</th>
-              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Телефон</th>
-              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Город</th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Организация</th>
-              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Специализация</th>
+              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Адрес организации</th>
+              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Должность</th>
+              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>ФИО руководителя</th>
+              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Наименование направления</th>
+              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Телефон организации</th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Комментарий</th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Последняя отправка</th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Действия</th>
@@ -162,7 +179,7 @@ const RecipientsTable = ({ onRemind }) => {
           <tbody>
             {recipients.length === 0 ? (
               <tr>
-                <td colSpan="10" className="text-center" style={{ padding: '11px 10px', textAlign: 'center' }}>Нет получателей</td>
+                <td colSpan="11" className="text-center" style={{ padding: '11px 10px', textAlign: 'center' }}>Нет получателей</td>
               </tr>
             ) : (
               recipients.map((r) => {
@@ -170,7 +187,12 @@ const RecipientsTable = ({ onRemind }) => {
                 const rowClass = r.hasSent ? 'table-warning' : '';
                 const lastSent = r.last_sent_at ? new Date(r.last_sent_at).toLocaleString() : '—';
                 return (
-                  <tr key={r.id} className={rowClass} style={{ background: r.hasSent ? '#fff3cd' : 'transparent' }}>
+                  <tr
+                    key={r.id}
+                    className={rowClass}
+                    style={{ background: r.hasSent ? '#fff3cd' : 'transparent' }}
+                    onDoubleClick={() => setEditModal(r)}
+                  >
                     <td style={{ padding: '11px 10px', textAlign: 'center' }}>
                       <input
                         type="checkbox"
@@ -179,14 +201,18 @@ const RecipientsTable = ({ onRemind }) => {
                       />
                     </td>
                     <td style={{ padding: '11px 10px' }}>{r.email}</td>
-                    <td style={{ padding: '11px 10px' }}>{r.name || ''}</td>
-                    <td style={{ padding: '11px 10px' }}>{r.phone || ''}</td>
-                    <td style={{ padding: '11px 10px' }}>{r.city || ''}</td>
                     <td style={{ padding: '11px 10px' }}>{r.organization || ''}</td>
-                    <td style={{ padding: '11px 10px' }}>{r.specialization || ''}</td>
+                    <td style={{ padding: '11px 10px' }}>{r.organization_address || ''}</td>
+                    <td style={{ padding: '11px 10px' }}>{r.position || ''}</td>
+                    <td style={{ padding: '11px 10px' }}>{r.manager_name || ''}</td>
+                    <td style={{ padding: '11px 10px' }}>{r.direction || ''}</td>
+                    <td style={{ padding: '11px 10px' }}>{r.organization_phone || ''}</td>
                     <td
                       className="comment-cell"
-                      onDoubleClick={() => handleCommentDoubleClick(r)}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        handleCommentDoubleClick(r);
+                      }}
                       style={{ padding: '11px 10px', cursor: 'pointer' }}
                     >
                       {r.comment || '✏️'}
@@ -194,11 +220,20 @@ const RecipientsTable = ({ onRemind }) => {
                     <td style={{ padding: '11px 10px' }}>{lastSent}</td>
                     <td style={{ padding: '11px 10px', textAlign: 'center' }}>
                       <button
-                        onClick={() => onRemind(r)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
-                        title="Создать напоминание"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActionsModal(r);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '18px',
+                          padding: '4px 8px'
+                        }}
+                        title="Действия"
                       >
-                        🔔
+                        ⋮
                       </button>
                     </td>
                   </tr>
@@ -213,6 +248,24 @@ const RecipientsTable = ({ onRemind }) => {
         <CommentsModal
           recipient={commentModal}
           onClose={() => setCommentModal(null)}
+        />
+      )}
+
+      {editModal && (
+        <RecipientEditModal
+          recipient={editModal}
+          onClose={() => setEditModal(null)}
+          onSaved={loadRecipients}
+        />
+      )}
+
+      {actionsModal && (
+        <RecipientActionsModal
+          recipient={actionsModal}
+          onClose={() => setActionsModal(null)}
+          onRemind={onRemind}
+          onEdit={setEditModal}
+          onDelete={handleDeleteRecipient}
         />
       )}
     </div>

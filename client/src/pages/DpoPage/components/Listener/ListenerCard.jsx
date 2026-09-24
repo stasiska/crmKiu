@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ListenerGroupHistory from '../Listeners/ListenerGroupHistory';
 import ListenerNotes from './ListenerNotes';
 import ContractGenerationModal from '../Listeners/ContractGenerationModal';
-import { fetchListenerGroupHistory, fetchListenerDocuments, downloadListenerDocument, deleteListenerDocument, uploadListenerDocument } from '../../../../api';
+import { fetchListenerGroupHistory, fetchListenerDocuments, downloadListenerDocument, deleteListenerDocument, uploadListenerDocument, generateListenerApplication } from '../../../../api';
 import './ListenerCard.css';
 
 const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization }) => {
@@ -107,6 +107,23 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
     setSelectedGroupId(groupId);
     setShowContractModal(true);
     console.log('Модальное окно должно открыться');
+  };
+
+  const handleGenerateApplication = async (groupId) => {
+    try {
+      const blob = await generateListenerApplication(listener.id, { group_id: groupId });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Заявление_${listener.last_name}_${new Date().getTime()}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Ошибка генерации заявления:', err);
+      alert('Ошибка генерации заявления: ' + (err.response?.data?.error || err.message));
+    }
   };
 
   const formatDate = (date) => date ? new Date(date).toLocaleDateString('ru-RU') : '—';
@@ -331,17 +348,39 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
                             {group.end_date && new Date(group.end_date).toLocaleDateString('ru-RU')}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => {
-                              console.log('Клик по кнопке договора, group id:', group.id);
-                              handleGenerateContract(group.id);
-                            }}
-                            className="btn btn-kiu"
-                            style={{ fontSize: '14px' }}
-                          >
-                            📄 Сгенерировать
-                          </button>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <div style={{ position: 'relative' }}>
+                            <select
+                              onChange={(e) => {
+                                const action = e.target.value;
+                                if (action === 'contract') {
+                                  handleGenerateContract(group.id);
+                                } else if (action === 'application') {
+                                  handleGenerateApplication(group.id);
+                                }
+                                e.target.value = ''; // Сброс выбора
+                              }}
+                              style={{
+                                padding: '8px 32px 8px 12px',
+                                background: '#1557a6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                appearance: 'none',
+                                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 8px center',
+                                backgroundSize: '16px'
+                              }}
+                            >
+                              <option value="">📄 Генерировать...</option>
+                              <option value="contract">Договор</option>
+                              <option value="application">Заявление</option>
+                            </select>
+                          </div>
                           <label
                             style={{
                               padding: '8px 16px',

@@ -31,6 +31,31 @@ exports.generateContract = async (req, res, next) => {
   }
 };
 
+// POST /api/listeners/:id/documents/application - генерация заявления
+exports.generateApplication = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { group_id } = req.body;
+
+    if (!group_id) {
+      return res.status(400).json({ error: 'Требуется group_id' });
+    }
+
+    const buffer = await documentService.generateListenerApplication(
+      parseInt(id, 10),
+      parseInt(group_id, 10)
+    );
+
+    // Возвращаем файл для скачивания (БЕЗ сохранения в БД)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="application_${id}_${Date.now()}.docx"`);
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 // POST /api/listeners/:id/documents/upload - загрузка готового документа
 exports.uploadDocument = async (req, res, next) => {
   try {

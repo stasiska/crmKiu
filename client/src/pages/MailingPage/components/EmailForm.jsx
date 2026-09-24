@@ -18,12 +18,23 @@ const EmailForm = () => {
     ignoreDuplicate,
     setIgnoreDuplicate,
     sendError, // ошибка из контекста
+    attachments,
+    setAttachments,
   } = useContext(AppContext);
 
   const handleTemplateChange = (e) => {
     const id = e.target.value;
     setSelectedTemplateId(id);
     applyTemplate(id);
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setAttachments(files);
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -130,13 +141,41 @@ const EmailForm = () => {
           />
           <div className="textarea-hint" style={{ marginTop: '7px', color: '#6b7280', fontSize: '11px' }}>
             Доступные переменные:
-            <code style={{ display: 'inline-block', marginLeft: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{'{email}'}</code>
-            <code style={{ display: 'inline-block', marginLeft: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{'{name}'}</code>
-            <code style={{ display: 'inline-block', marginLeft: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{'{city}'}</code>
-            <code style={{ display: 'inline-block', marginLeft: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{'{specialization}'}</code>
-            <code style={{ display: 'inline-block', marginLeft: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{'{phone}'}</code>
-            <code style={{ display: 'inline-block', marginLeft: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{'{organization}'}</code>
+            {['email', 'name', 'city', 'specialization', 'phone', 'organization', 'organization_address', 'organization_phone', 'position', 'manager_name', 'direction'].map(v => (
+              <code key={v} style={{ display: 'inline-block', marginLeft: '4px', marginTop: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{`{${v}}`}</code>
+            ))}
           </div>
+        </div>
+
+        <div className="form-group" style={{ marginBottom: '17px' }}>
+          <label htmlFor="attachmentInput" style={{ display: 'block', marginBottom: '6px', color: '#4b5563', fontSize: '12px', fontWeight: 600 }}>
+            Вложения
+          </label>
+          <input
+            type="file"
+            id="attachmentInput"
+            multiple
+            onChange={handleFileChange}
+            disabled={isSending}
+            style={{ display: 'block', width: '100%', padding: '8px', border: '1px solid #d9e0e8', borderRadius: '8px', fontSize: '13px' }}
+          />
+          {attachments.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              {attachments.map((file, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '13px', color: '#374151' }}>📎 {file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(index)}
+                    disabled={isSending}
+                    style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '16px', padding: '0 4px' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="email-actions" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>

@@ -40,6 +40,7 @@ export const AppProvider = ({ children }) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
@@ -209,6 +210,7 @@ export const AppProvider = ({ children }) => {
         subject: subject.trim(),
         body: body.trim(),
         ignoreDuplicate,
+        attachments,
       });
     } catch (e) {
       const errorMessage = e.response?.data?.error || e.message || 'Ошибка отправки';
@@ -221,7 +223,7 @@ export const AppProvider = ({ children }) => {
       }
       setTimeout(() => setSendError(null), 5000);
     }
-  }, [selectedSenderId, selectedRecipientIds, ignoreDuplicate, subject, body, connectProgressSSE]);
+  }, [selectedSenderId, selectedRecipientIds, ignoreDuplicate, subject, body, attachments, connectProgressSSE]);
 
   const handleStop = useCallback(async () => {
     try {
@@ -332,6 +334,7 @@ export const AppProvider = ({ children }) => {
     loadRecipientOrganizations();  // переименовано
     loadTemplates();
     loadUsers();  // добавлено
+    loadOrgs({ limit: 1000 }); // загружаем все организации для селектов
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -372,6 +375,8 @@ export const AppProvider = ({ children }) => {
     setSubject,
     body,
     setBody,
+    attachments,
+    setAttachments,
     loading,
     error,
     sendError,

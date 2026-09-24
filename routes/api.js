@@ -37,6 +37,13 @@ const uploadDocx = multer({
   }
 });
 
+const uploadAny = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB лимит
+  }
+});
+
 const db = require('../db');
 
 const {
@@ -131,6 +138,7 @@ router.get('/send/progress', (req, res) => {
 router.use(authMiddleware);
 
 // ---- Получатели ----
+router.post('/recipients', authMiddleware, recipientCtrl.createRecipient);
 router.post('/recipients/import', upload.single('file'), recipientCtrl.importRecipients);
 router.get('/recipients', recipientCtrl.getRecipients);
 router.get('/recipients/filters', recipientCtrl.getFiltersOptions);
@@ -178,17 +186,27 @@ router.get('/logs', logCtrl.getLogs);
 router.delete('/logs', logCtrl.clearLogs);
 
 // ---- Отправка писем ----
-router.post('/send', async (req, res) => {
-  const { senderId, recipientIds, subject, body, ignoreDuplicate } = req.body;
+router.post('/send', uploadAny.array('attachments', 10), async (req, res) => {
+  let { senderId, recipientIds, subject, body, ignoreDuplicate } = req.body;
+
+  // Парсим recipientIds из JSON строки (приходит из FormData)
+  try {
+    if (typeof recipientIds === 'string') {
+      recipientIds = JSON.parse(recipientIds);
+    }
+  } catch (e) {
+    return res.status(400).json({ error: 'Неверный формат recipientIds' });
+  }
 
   // Валидация recipientIds
   if (!senderId || !recipientIds || !Array.isArray(recipientIds) || recipientIds.length === 0) {
     return res.status(400).json({ error: 'Не передан senderId или recipientIds (должен быть массив чисел)' });
   }
   // Проверка, что все элементы – числа
-  if (!recipientIds.every(id => Number.isInteger(id))) {
+  if (!recipientIds.every(id => Number.isInteger(Number(id)))) {
     return res.status(400).json({ error: 'recipientIds должен содержать только целые числа' });
   }
+  recipientIds = recipientIds.map(id => Number(id));
 
   if (!subject || !body) {
     return res.status(400).json({ error: 'Тема и тело письма обязательны' });
@@ -198,6 +216,13 @@ router.post('/send', async (req, res) => {
   if (!limitCheck.allowed) {
     return res.status(429).json({ error: `Лимит превышен: ${limitCheck.reason}` });
   }
+
+  // Формируем массив вложений для nodemailer
+  const attachments = (req.files || []).map(file => ({
+    filename: file.originalname,
+    content: file.buffer,
+  }));
+
   try {
     const result = await sendCtrl.startSend(
       senderId,
@@ -205,7 +230,8 @@ router.post('/send', async (req, res) => {
       subject,
       body,
       ignoreDuplicate,
-      req.user.id
+      req.user.id,
+      attachments
     );
     res.json(result);
   } catch (err) {
@@ -263,6 +289,21 @@ router.put('/recipients/:id/comment', validate(commentSchema), async (req, res) 
     res.status(500).json({ error: err.message });
   }
 });
+
+// ---- Обновление получателя (все поля) ----
+router.put('/recipients/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const ok = await db.updateRecipient(id, req.body);
+    if (!ok) return res.status(404).json({ error: 'Получатель не найден' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Удаление получателя ----
+router.delete('/recipients/:id', recipientCtrl.deleteRecipient);
 
 // ---- Напоминания ----
 const reminderCtrl = require('../controllers/reminderController');
@@ -367,6 +408,7 @@ const multerListenerDocs = multer({
 });
 
 router.post('/listeners/:id/documents/contract', listenerDocumentCtrl.generateContract);
+router.post('/listeners/:id/documents/application', listenerDocumentCtrl.generateApplication);
 router.post('/listeners/:id/documents/upload', multerListenerDocs.single('file'), listenerDocumentCtrl.uploadDocument);
 router.get('/listeners/:id/documents', listenerDocumentCtrl.getDocuments);
 router.get('/listeners/:id/documents/:docId/download', listenerDocumentCtrl.downloadDocument);

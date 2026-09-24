@@ -2,6 +2,28 @@ const db = require('../db');
 const config = require('../config');
 const { parseExcel } = require('../services/excelService');
 
+async function createRecipient(req, res) {
+  try {
+    const recipient = await db.createRecipient(req.body);
+    res.status(201).json(recipient);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+async function deleteRecipient(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    const deleted = await db.deleteRecipient(id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Получатель не найден' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 async function importRecipients(req, res) {
   try {
     const rows = parseExcel(req.file.buffer);
@@ -35,12 +57,8 @@ async function getRecipients(req, res) {
 // Единый метод для всех опций фильтров
 async function getFiltersOptions(req, res) {
   try {
-    const [cities, specializations, organizations] = await Promise.all([
-      db.getDistinctCities(),
-      db.getDistinctSpecializations(),
-      db.getDistinctOrganizations(),
-    ]);
-    res.json({ cities, specializations, organizations });
+    const organizations = await db.getDistinctOrganizations();
+    res.json({ organizations });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -66,6 +84,8 @@ async function countRecipients(req, res) {
 }
 
 module.exports = {
+  createRecipient,
+  deleteRecipient,
   importRecipients,
   getRecipients,
   getFiltersOptions,

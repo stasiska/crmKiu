@@ -12,6 +12,18 @@ const ContractGenerationModal = ({ isOpen, onClose, listener, group, onContractG
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
+  const formatStudyForm = (format) => {
+    if (!format) return '';
+    const formatLower = format.toLowerCase();
+    if (formatLower.includes('аудитория') || formatLower.includes('очн')) {
+      return 'очная';
+    }
+    if (formatLower.includes('дистант') || formatLower.includes('заочн')) {
+      return 'заочная';
+    }
+    return format;
+  };
+
   if (!isOpen) {
     console.log('Modal не отображается, isOpen = false');
     return null;
@@ -70,7 +82,7 @@ const ContractGenerationModal = ({ isOpen, onClose, listener, group, onContractG
         <div style={{ marginBottom: '20px', padding: '12px', background: '#f3f4f6', borderRadius: '8px', fontSize: '14px' }}>
           <div><strong>Слушатель:</strong> {listener.last_name} {listener.first_name} {listener.middle_name}</div>
           <div><strong>Курс:</strong> {group.course_name}</div>
-          <div><strong>Форма обучения:</strong> {group.format}</div>
+          <div><strong>Форма обучения:</strong> {formatStudyForm(group.format)}</div>
         </div>
 
         <form onSubmit={handleSubmit}>
