@@ -102,67 +102,110 @@ async function deleteSender(id, userId) {
 
 // ---- Recipients ----
 
-async function getRecipients(filters = {}) {
-  let sql = 'SELECT * FROM recipients WHERE 1=1';
-  const values = [];
-  let idx = 1;
-  if (filters.city) {
-    sql += ` AND city = $${idx}`;
-    values.push(filters.city);
-    idx++;
-  }
-  if (filters.specialization) {
-    sql += ` AND specialization = $${idx}`;
-    values.push(filters.specialization);
-    idx++;
-  }
-  if (filters.organization) {
-    sql += ` AND organization = $${idx}`;
-    values.push(filters.organization);
-    idx++;
-  }
-  if (filters.search) {
-    sql += ` AND (email ILIKE $${idx} OR name ILIKE $${idx})`;
-    values.push(`%${filters.search}%`);
-    idx++;
-  }
-  sql += ' ORDER BY imported_at DESC';
-  const res = await query(sql, values);
-  return res.rows;
+const RECIPIENT_FIELDS = {
+  organization: 'Организация',
+  comment: 'Комментарий',
+  organization_address: 'Адрес организации',
+  position: 'Должность',
+  manager_name: 'ФИО руководителя',
+  direction: 'Наименование направления',
+  organization_phone: 'Телефон организации',
+  inn: 'ИНН'
+};
+
+function normalizeInn(inn) {
+  return String(inn ?? '').replace(/\s/g, '');
 }
 
-async function addRecipients(rows) {
+async function recordRecipientChanges(client, recipient, updates, userId, source) {
+  const changes = Object.entries(updates)
+    .filter(([key, value]) => RECIPIENT_FIELDS[key] && String(recipient[key] ?? '') !== String(value ?? ''))
+    .map(([key, value]) => `${RECIPIENT_FIELDS[key]}: «${recipient[key] || 'не указано'}» → «${value || 'не указано'}»`);
+  if (changes.length === 0) return false;
+
+  await client.query(
+    `INSERT INTO comments (recipient_id, user_id, comment, created_at)
+     VALUES ($1, $2, $3, clock_timestamp())`,
+    [recipient.id, userId || null, `${source} (${recipient.email}):\n${changes.join('\n')}`]
+  );
+  return true;
+}
+
+async function syncRecipientHistory(client, recipientId, organizationId, userId) {
+  // Общая блокировка организации не даёт параллельным запросам скопировать одну запись дважды.
+  await client.query('SELECT id FROM organizations WHERE id = $1 FOR NO KEY UPDATE', [organizationId]);
+  // У старых комментариев автор может отсутствовать, а заметке организации он обязателен.
+  const author = await client.query(
+    `SELECT id FROM users ORDER BY (id = $1) DESC, (role = 'admin') DESC, id LIMIT 1`,
+    [userId || null]
+  );
+  const fallbackUserId = author.rows[0]?.id;
+  const notes = await client.query(
+    `INSERT INTO organization_notes (organization_id, type, date, note, creator_id, created_at)
+     SELECT $2, 'note', c.created_at, c.comment, COALESCE(c.user_id, $3::integer), c.created_at
+     FROM comments c
+     WHERE c.recipient_id = $1 AND COALESCE(c.user_id, $3::integer) IS NOT NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM organization_notes n
+         WHERE n.organization_id = $2 AND n.note = c.comment
+           AND ABS(EXTRACT(EPOCH FROM (n.created_at - c.created_at))) < 5
+       )`,
+    [recipientId, organizationId, fallbackUserId || null]
+  );
+  const comments = await client.query(
+    `INSERT INTO comments (recipient_id, user_id, comment, created_at)
+     SELECT $1, n.creator_id, n.note, n.created_at
+     FROM organization_notes n
+     WHERE n.organization_id = $2
+       AND NOT EXISTS (
+         SELECT 1 FROM comments c
+         WHERE c.recipient_id = $1 AND c.comment = n.note
+           AND ABS(EXTRACT(EPOCH FROM (c.created_at - n.created_at))) < 5
+       )`,
+    [recipientId, organizationId]
+  );
+  return { syncedCount: notes.rowCount, receivedCount: comments.rowCount };
+}
+
+async function syncRecipientOrganization(client, recipient, userId) {
+  const inn = normalizeInn(recipient.inn);
+  const result = inn ? await client.query(
+    `SELECT id, name, inn FROM organizations WHERE REGEXP_REPLACE(inn, '\\s', '', 'g') = $1 ORDER BY id LIMIT 1`,
+    [inn]
+  ) : { rows: [] };
+  const organization = result.rows[0] || null;
+  const organizationId = organization?.id || null;
+  const linkedNow = Boolean(organizationId && organizationId !== recipient.organization_id);
+
+  if (organizationId !== (recipient.organization_id || null)) {
+    await client.query('UPDATE recipients SET organization_id = $1 WHERE id = $2', [organizationId, recipient.id]);
+  }
+  const counts = organization ? await syncRecipientHistory(client, recipient.id, organizationId, userId) : { syncedCount: 0, receivedCount: 0 };
+  return { linked: Boolean(organization), linkedNow, organization, inn, ...counts };
+}
+
+async function autoLinkRecipientsByInn(userId, organizationId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const inserted = [];
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const email = row.email || row['e-mail'] || row['почта'] || '';
-      if (!email) continue;
-
-      // Проверяем существование
-      const exists = await client.query('SELECT id FROM recipients WHERE email = $1', [email]);
-      if (exists.rows.length > 0) continue;
-
-      const organization = row.organization || row.организация || row.company || row.компания || row.org || '';
-      const comment = row.comment || row.комментарий || '';
-      const organizationAddress = row.organization_address || row['адрес организации'] || row.адрес_организации || '';
-      const position = row.position || row.должность || '';
-      const managerName = row.manager_name || row['фио руководителя'] || row.руководитель || '';
-      const direction = row.direction || row.направление || row['наименование направления'] || '';
-      const organizationPhone = row.organization_phone || row['телефон организации'] || row.телефон_организации || '';
-      const extra = JSON.stringify(row);
-
-      const res = await client.query(
-        `INSERT INTO recipients (email, organization, comment, extra, organization_address, position, manager_name, direction, organization_phone)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-        [email, organization, comment, extra, organizationAddress, position, managerName, direction, organizationPhone]
-      );
-      inserted.push({ id: res.rows[0].id, email });
+    const recipients = await client.query(
+      `SELECT r.* FROM recipients r
+       WHERE ((r.inn IS NOT NULL AND TRIM(r.inn) <> '') OR r.organization_id IS NOT NULL)
+         AND ($1::integer IS NULL OR r.organization_id = $1 OR EXISTS (
+           SELECT 1 FROM organizations o WHERE o.id = $1
+             AND REGEXP_REPLACE(o.inn, '\\s', '', 'g') = REGEXP_REPLACE(r.inn, '\\s', '', 'g')
+             AND TRIM(o.inn) <> '' AND TRIM(r.inn) <> ''
+         ))
+       ORDER BY r.id FOR UPDATE OF r`,
+      [organizationId || null]
+    );
+    const linked = [];
+    for (const recipient of recipients.rows) {
+      const result = await syncRecipientOrganization(client, recipient, userId);
+      if (result.linkedNow) linked.push({ recipientId: recipient.id, ...result });
     }
     await client.query('COMMIT');
-    return inserted.length;
+    return linked;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -171,26 +214,132 @@ async function addRecipients(rows) {
   }
 }
 
-async function createRecipient(data) {
-  const { email, organization, comment, organization_address, position, manager_name, direction, organization_phone } = data;
-
-  if (!email) {
-    throw new Error('Email обязателен');
+async function ensureRecipientOrganization(recipientId, userId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query('SELECT * FROM recipients WHERE id = $1 FOR UPDATE', [recipientId]);
+    if (!result.rows.length) {
+      await client.query('COMMIT');
+      return null;
+    }
+    const link = await syncRecipientOrganization(client, result.rows[0], userId);
+    await client.query('COMMIT');
+    return link;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
+}
 
-  // Проверка существования
-  const exists = await query('SELECT id FROM recipients WHERE email = $1', [email]);
-  if (exists.rows.length > 0) {
-    throw new Error('Получатель с таким email уже существует');
+async function getRecipients(filters = {}) {
+  let sql = 'SELECT * FROM recipients WHERE 1=1';
+  const values = [];
+  let idx = 1;
+  if (filters.organization) {
+    sql += ` AND organization = $${idx}`;
+    values.push(filters.organization);
+    idx++;
   }
+  if (filters.search) {
+    sql += ` AND (email ILIKE $${idx}
+      OR organization ILIKE $${idx}
+      OR position ILIKE $${idx}
+      OR manager_name ILIKE $${idx}
+      OR direction ILIKE $${idx})`;
+    values.push(`%${filters.search}%`);
+    idx++;
+  }
+  sql += ' ORDER BY GREATEST(updated_at, imported_at) DESC NULLS LAST, id DESC';
+  const res = await query(sql, values);
+  return res.rows;
+}
 
-  const res = await query(
-    `INSERT INTO recipients (email, organization, comment, organization_address, position, manager_name, direction, organization_phone)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-    [email, organization || '', comment || '', organization_address || '', position || '', manager_name || '', direction || '', organization_phone || '']
-  );
+async function addRecipients(rows, userId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = { imported: 0, updated: 0, linked: 0 };
+    for (const row of rows) {
+      const email = String(row.email || row['e-mail'] || row['почта'] || '').trim();
+      if (!email) continue;
 
-  return res.rows[0];
+      const organization = row.organization || row.организация || row.company || row.компания || row.org || '';
+      const comment = row.comment || row.комментарий || '';
+      const organizationAddress = row.organization_address || row['адрес организации'] || row.адрес_организации || '';
+      const position = String(row.position || row.должность || '').trim();
+      const managerName = String(row.manager_name || row['фио руководителя'] || row.руководитель || '').trim();
+      const direction = row.direction || row.направление || row['наименование направления'] || '';
+      const organizationPhone = row.organization_phone || row['телефон организации'] || row.телефон_организации || '';
+      const inn = normalizeInn(row.inn || row.инн || '');
+      const exists = await client.query('SELECT * FROM recipients WHERE LOWER(TRIM(email)) = LOWER($1) ORDER BY id LIMIT 1 FOR UPDATE', [email]);
+      let recipient;
+
+      if (exists.rows.length > 0) {
+        recipient = exists.rows[0];
+        const updates = {};
+        if (managerName) updates.manager_name = managerName;
+        if (position) updates.position = position;
+        if (inn) updates.inn = inn;
+        const changed = await recordRecipientChanges(client, recipient, updates, userId, 'Запись изменена при импорте Excel');
+        const values = Object.values(updates);
+        const fields = Object.keys(updates).map((key, index) => `${key} = $${index + 1}`);
+        fields.push('imported_at = clock_timestamp()');
+        if (changed) fields.push('updated_at = clock_timestamp()');
+        values.push(recipient.id);
+        const saved = await client.query(
+          `UPDATE recipients SET ${fields.join(', ')} WHERE id = $${values.length} RETURNING *`, values
+        );
+        recipient = saved.rows[0];
+        if (changed) result.updated++;
+      } else {
+        const saved = await client.query(
+          `INSERT INTO recipients (email, organization, comment, extra, organization_address, position, manager_name, direction, organization_phone, inn, imported_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, clock_timestamp()) RETURNING *`,
+          [email, organization, comment, JSON.stringify(row), organizationAddress, position, managerName, direction, organizationPhone, inn]
+        );
+        recipient = saved.rows[0];
+        result.imported++;
+      }
+      const link = await syncRecipientOrganization(client, recipient, userId);
+      if (link.linkedNow) result.linked++;
+    }
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function createRecipient(data, userId) {
+  const { email, organization, comment, organization_address, position, manager_name, direction, organization_phone, inn } = data;
+  if (!email) throw new Error('Email обязателен');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const exists = await client.query('SELECT id FROM recipients WHERE LOWER(TRIM(email)) = LOWER($1)', [String(email).trim()]);
+    if (exists.rows.length > 0) throw new Error('Получатель с таким email уже существует');
+    const res = await client.query(
+      `INSERT INTO recipients (email, organization, comment, organization_address, position, manager_name, direction, organization_phone, inn, imported_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, clock_timestamp()) RETURNING *`,
+      [String(email).trim(), organization || '', comment || '', organization_address || '', position || '', manager_name || '', direction || '', organization_phone || '', normalizeInn(inn)]
+    );
+    const recipient = res.rows[0];
+    const link = await syncRecipientOrganization(client, recipient, userId);
+    await client.query('COMMIT');
+    return { ...recipient, organization_id: link.organization?.id || null, organizationLink: link };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function getRecipientsByIds(ids) {
@@ -210,35 +359,43 @@ async function countRecipients() {
   return parseInt(res.rows[0].count);
 }
 
-async function updateRecipientComment(id, comment) {
-  const res = await query('UPDATE recipients SET comment = $1 WHERE id = $2', [comment, id]);
-  return res.rowCount > 0;
+async function updateRecipientComment(id, comment, userId) {
+  return updateRecipient(id, { comment }, userId);
 }
 
-async function updateRecipient(id, updates) {
-  const allowed = [
-    'organization', 'comment',
-    'organization_address', 'position', 'manager_name', 'direction', 'organization_phone'
-  ];
-  const filtered = Object.keys(updates)
-    .filter(key => allowed.includes(key))
-    .reduce((obj, key) => { obj[key] = updates[key]; return obj; }, {});
-
-  const fields = [];
-  const values = [];
-  let idx = 1;
-
-  for (const [key, val] of Object.entries(filtered)) {
-    fields.push(`${key} = $${idx}`);
-    values.push(val);
-    idx++;
+async function updateRecipient(id, updates, userId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const current = await client.query('SELECT * FROM recipients WHERE id = $1 FOR UPDATE', [id]);
+    if (!current.rows.length) {
+      await client.query('COMMIT');
+      return null;
+    }
+    const recipient = current.rows[0];
+    const filtered = Object.keys(updates)
+      .filter(key => Object.prototype.hasOwnProperty.call(RECIPIENT_FIELDS, key) && updates[key] !== undefined)
+      .reduce((obj, key) => {
+        obj[key] = key === 'inn' ? normalizeInn(updates[key]) : updates[key];
+        return obj;
+      }, {});
+    const changed = await recordRecipientChanges(client, recipient, filtered, userId, 'Запись отредактирована');
+    const values = Object.values(filtered);
+    const fields = Object.keys(filtered).map((key, index) => `${key} = $${index + 1}`);
+    if (fields.length) {
+      fields.push('updated_at = clock_timestamp()');
+      values.push(id);
+      await client.query(`UPDATE recipients SET ${fields.join(', ')} WHERE id = $${values.length}`, values);
+    }
+    const link = await syncRecipientOrganization(client, { ...recipient, ...filtered }, userId);
+    await client.query('COMMIT');
+    return { success: true, changed, organizationLink: link };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
-
-  if (fields.length === 0) return false;
-  values.push(id);
-  const sql = `UPDATE recipients SET ${fields.join(', ')} WHERE id = $${idx}`;
-  const res = await query(sql, values);
-  return res.rowCount > 0;
 }
 
 async function deleteRecipient(id) {
@@ -610,8 +767,8 @@ async function updateTask(id, userId, updates) {
   }
   if (fields.length === 0) return false;
   fields.push(`updated_at = CURRENT_TIMESTAMP`);
-  values.push(id, userId);
-  const sql = `UPDATE tasks SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx+1}`;
+  values.push(id, userId, userId);
+  const sql = `UPDATE tasks SET ${fields.join(', ')} WHERE id = $${idx} AND (user_id = $${idx+1} OR assigned_to = $${idx+2})`;
   const res = await query(sql, values);
   return res.rowCount > 0;
 }
@@ -630,25 +787,40 @@ async function clearDatabase() {
 }
 
 // ---- Comments ----
-async function getComments(recipientId) {
+async function getComments(recipientId, userId) {
+  await ensureRecipientOrganization(recipientId, userId);
   const res = await query(
     `SELECT c.*, u.name as author_name
      FROM comments c
      LEFT JOIN users u ON c.user_id = u.id
      WHERE c.recipient_id = $1
-     ORDER BY c.created_at DESC`,
+     ORDER BY c.created_at DESC, c.id DESC`,
     [recipientId]
   );
   return res.rows;
 }
 
 async function addComment(recipientId, userId, comment) {
-  const res = await query(
-    `INSERT INTO comments (recipient_id, user_id, comment)
-     VALUES ($1, $2, $3) RETURNING id`,
-    [recipientId, userId, comment]
-  );
-  return res.rows[0].id;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const current = await client.query('SELECT * FROM recipients WHERE id = $1 FOR UPDATE', [recipientId]);
+    if (!current.rows.length) throw new Error('Получатель не найден');
+    const res = await client.query(
+      `INSERT INTO comments (recipient_id, user_id, comment)
+       VALUES ($1, $2, $3) RETURNING id`,
+      [recipientId, userId, comment]
+    );
+    await client.query('UPDATE recipients SET comment = $1 WHERE id = $2', [comment, recipientId]);
+    await syncRecipientOrganization(client, current.rows[0], userId);
+    await client.query('COMMIT');
+    return res.rows[0].id;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateRecipientLastComment(recipientId, comment) {
@@ -966,21 +1138,49 @@ async function getOrganizationNoteById(id, organizationId) {
 }
 
 async function createOrganizationNote(data, userId) {
-  const { organization_id, type, date, note, executor_id, file_link } = data;
-  const res = await query(
-    `INSERT INTO organization_notes (organization_id, type, date, note, executor_id, creator_id, file_link)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [
-      organization_id,
-      type,
-      date || null,
-      note,
-      executor_id || null,
-      userId,
-      file_link || null
-    ]
-  );
-  return res.rows[0].id;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { organization_id, type, date, note, executor_id, file_link } = data;
+    const recipientsRes = await client.query(
+      `SELECT r.* FROM recipients r
+       WHERE r.organization_id = $1 OR EXISTS (
+         SELECT 1 FROM organizations o WHERE o.id = $1
+           AND REGEXP_REPLACE(o.inn, '\\s', '', 'g') = REGEXP_REPLACE(r.inn, '\\s', '', 'g')
+           AND TRIM(o.inn) <> '' AND TRIM(r.inn) <> ''
+       ) ORDER BY r.id FOR UPDATE OF r`,
+      [organization_id]
+    );
+    await client.query('SELECT id FROM organizations WHERE id = $1 FOR NO KEY UPDATE', [organization_id]);
+
+    // Создаем заметку в организации
+    const res = await client.query(
+      `INSERT INTO organization_notes (organization_id, type, date, note, executor_id, creator_id, file_link)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at`,
+      [
+        organization_id,
+        type,
+        date || null,
+        note,
+        executor_id || null,
+        userId,
+        file_link || null
+      ]
+    );
+    const noteId = res.rows[0].id;
+    for (const recipient of recipientsRes.rows) {
+      await syncRecipientOrganization(client, recipient, userId);
+    }
+
+    await client.query('COMMIT');
+    return noteId;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 const ALLOWED_NOTE_FIELDS = ['type', 'date', 'note', 'executor_id', 'file_link'];
@@ -1768,6 +1968,141 @@ async function deleteListenerNote(id) {
   return res.rowCount > 0;
 }
 
+// ---- Синхронизация recipients <-> organizations ----
+
+async function findOrganizationByInn(inn) {
+  if (!inn) return null;
+  const res = await query('SELECT * FROM organizations WHERE inn = $1 LIMIT 1', [inn]);
+  return res.rows[0] || null;
+}
+
+async function findRecipientsByInn(inn) {
+  if (!inn) return [];
+  const res = await query('SELECT * FROM recipients WHERE inn = $1', [inn]);
+  return res.rows;
+}
+
+async function linkRecipientToOrganization(recipientId, organizationId) {
+  const res = await query(
+    'UPDATE recipients SET organization_id = $1 WHERE id = $2 RETURNING *',
+    [organizationId, recipientId]
+  );
+  return res.rows[0];
+}
+
+async function syncRecipientCommentsToOrganization(recipientId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Получаем recipient с organization_id
+    const recipientRes = await client.query('SELECT * FROM recipients WHERE id = $1', [recipientId]);
+    const recipient = recipientRes.rows[0];
+    if (!recipient || !recipient.organization_id) {
+      throw new Error('Получатель не связан с организацией');
+    }
+
+    // Получаем все комментарии получателя
+    const commentsRes = await client.query(
+      `SELECT c.*, u.name as author_name, u.id as author_id
+       FROM comments c
+       LEFT JOIN users u ON c.user_id = u.id
+       WHERE c.recipient_id = $1
+       ORDER BY c.created_at ASC`,
+      [recipientId]
+    );
+
+    let syncedCount = 0;
+
+    for (const comment of commentsRes.rows) {
+      // Проверяем, не была ли уже синхронизирована эта заметка
+      // (ищем заметку с таким же текстом и датой создания)
+      const existingNote = await client.query(
+        `SELECT id FROM organization_notes
+         WHERE organization_id = $1
+         AND note = $2
+         AND ABS(EXTRACT(EPOCH FROM (created_at - $3))) < 5`,
+        [recipient.organization_id, comment.comment, comment.created_at]
+      );
+
+      if (existingNote.rows.length === 0) {
+        // Создаем заметку в организации
+        await client.query(
+          `INSERT INTO organization_notes (organization_id, type, date, note, creator_id, created_at)
+           VALUES ($1, 'note', $2, $3, $4, $5)`,
+          [
+            recipient.organization_id,
+            comment.created_at,
+            comment.comment,
+            comment.author_id || 1, // если нет автора, используем admin
+            comment.created_at
+          ]
+        );
+        syncedCount++;
+      }
+    }
+
+    await client.query('COMMIT');
+    return { syncedCount, totalComments: commentsRes.rows.length };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function syncOrganizationNotesToRecipients(organizationId, noteId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Получаем заметку организации
+    const noteRes = await client.query('SELECT * FROM organization_notes WHERE id = $1', [noteId]);
+    const note = noteRes.rows[0];
+    if (!note) {
+      throw new Error('Заметка не найдена');
+    }
+
+    // Находим всех получателей, связанных с этой организацией
+    const recipientsRes = await client.query(
+      'SELECT id FROM recipients WHERE organization_id = $1',
+      [organizationId]
+    );
+
+    let syncedCount = 0;
+
+    for (const recipient of recipientsRes.rows) {
+      // Проверяем, не существует ли уже такой комментарий
+      const existingComment = await client.query(
+        `SELECT id FROM comments
+         WHERE recipient_id = $1
+         AND comment = $2
+         AND ABS(EXTRACT(EPOCH FROM (created_at - $3))) < 5`,
+        [recipient.id, note.note, note.created_at]
+      );
+
+      if (existingComment.rows.length === 0) {
+        // Создаем комментарий для получателя
+        await client.query(
+          `INSERT INTO comments (recipient_id, user_id, comment, created_at)
+           VALUES ($1, $2, $3, $4)`,
+          [recipient.id, note.creator_id, note.note, note.created_at]
+        );
+        syncedCount++;
+      }
+    }
+
+    await client.query('COMMIT');
+    return { syncedCount, totalRecipients: recipientsRes.rows.length };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   // Comments
   getComments,
@@ -1791,6 +2126,15 @@ module.exports = {
   updateRecipientComment,
   updateRecipient,
   deleteRecipient,
+
+  // Recipient-Organization Sync
+  ensureRecipientOrganization,
+  autoLinkRecipientsByInn,
+  findOrganizationByInn,
+  findRecipientsByInn,
+  linkRecipientToOrganization,
+  syncRecipientCommentsToOrganization,
+  syncOrganizationNotesToRecipients,
 
   // Logs
   addLog,

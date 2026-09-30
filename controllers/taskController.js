@@ -80,9 +80,9 @@ async function updateTask(req, res) {
         if (!user) {
           return res.status(400).json({ error: 'Указанный пользователь не найден' });
         }
-        updates.assignedTo = parseInt(assignedTo);
+        updates.assigned_to = parseInt(assignedTo);
       } else {
-        updates.assignedTo = null;
+        updates.assigned_to = null;
       }
     }
 

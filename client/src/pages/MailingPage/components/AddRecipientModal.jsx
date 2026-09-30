@@ -9,6 +9,7 @@ const FIELDS = [
   { key: 'position', label: 'Должность' },
   { key: 'manager_name', label: 'ФИО руководителя' },
   { key: 'direction', label: 'Наименование направления' },
+  { key: 'inn', label: 'ИНН' },
 ];
 
 const AddRecipientModal = ({ onClose, onSaved }) => {
@@ -33,8 +34,12 @@ const AddRecipientModal = ({ onClose, onSaved }) => {
     setSaving(true);
     setError('');
     try {
-      await api.post('/recipients', formData);
-      if (onSaved) onSaved();
+      const { data: recipient } = await api.post('/recipients', formData);
+      if (recipient.organizationLink?.linkedNow) {
+        const link = recipient.organizationLink;
+        alert(`ИНН ${link.inn} привязан к организации «${link.organization.name}». История синхронизирована.`);
+      }
+      if (onSaved) await onSaved();
       onClose();
     } catch (err) {
       setError('Ошибка добавления: ' + (err.response?.data?.error || err.message));

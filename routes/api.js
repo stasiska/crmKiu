@@ -282,9 +282,9 @@ router.put('/recipients/:id/comment', validate(commentSchema), async (req, res) 
   try {
     const id = parseInt(req.params.id);
     const { comment } = req.body;
-    const ok = await db.updateRecipientComment(id, comment);
-    if (!ok) return res.status(404).json({ error: 'Получатель не найден' });
-    res.json({ success: true });
+    const result = await db.updateRecipientComment(id, comment, req.user.id);
+    if (!result) return res.status(404).json({ error: 'Получатель не найден' });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -294,9 +294,9 @@ router.put('/recipients/:id/comment', validate(commentSchema), async (req, res) 
 router.put('/recipients/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const ok = await db.updateRecipient(id, req.body);
-    if (!ok) return res.status(404).json({ error: 'Получатель не найден' });
-    res.json({ success: true });
+    const result = await db.updateRecipient(id, req.body, req.user.id);
+    if (!result) return res.status(404).json({ error: 'Получатель не найден' });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -304,6 +304,59 @@ router.put('/recipients/:id', async (req, res) => {
 
 // ---- Удаление получателя ----
 router.delete('/recipients/:id', recipientCtrl.deleteRecipient);
+
+// ---- Связывание и синхронизация получателя с организацией ----
+router.post('/recipients/:id/link-organization', async (req, res) => {
+  try {
+    const recipientId = parseInt(req.params.id);
+    const result = await db.ensureRecipientOrganization(recipientId, req.user.id);
+    if (!result) {
+      return res.status(404).json({ error: 'Получатель не найден' });
+    }
+    if (!result.linked) {
+      return res.status(404).json({ error: 'Организация с таким ИНН не найдена' });
+    }
+
+    res.json({ success: true, organization: result.organization, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/recipients/:id/sync-to-organization', async (req, res) => {
+  try {
+    const recipientId = parseInt(req.params.id);
+    const result = await db.ensureRecipientOrganization(recipientId, req.user.id);
+    if (!result) {
+      return res.status(404).json({ error: 'Получатель не найден' });
+    }
+    if (!result.linked) {
+      return res.status(400).json({ error: 'Получатель не связан с организацией по ИНН' });
+    }
+
+    res.json({
+      success: true,
+      syncedCount: result.syncedCount,
+      receivedCount: result.receivedCount,
+      organization: result.organization
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Получить информацию о связи с организацией ----
+router.get('/recipients/:id/organization-link', async (req, res) => {
+  try {
+    const recipientId = parseInt(req.params.id);
+
+    const result = await db.ensureRecipientOrganization(recipientId, req.user.id);
+    if (!result) return res.status(404).json({ error: 'Получатель не найден' });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ---- Напоминания ----
 const reminderCtrl = require('../controllers/reminderController');
@@ -409,6 +462,8 @@ const multerListenerDocs = multer({
 
 router.post('/listeners/:id/documents/contract', listenerDocumentCtrl.generateContract);
 router.post('/listeners/:id/documents/application', listenerDocumentCtrl.generateApplication);
+router.post('/listeners/:id/documents/personal-data-consent', listenerDocumentCtrl.generatePersonalDataConsent);
+router.post('/listeners/:id/documents/personal-data-distribution-consent', listenerDocumentCtrl.generatePersonalDataDistributionConsent);
 router.post('/listeners/:id/documents/upload', multerListenerDocs.single('file'), listenerDocumentCtrl.uploadDocument);
 router.get('/listeners/:id/documents', listenerDocumentCtrl.getDocuments);
 router.get('/listeners/:id/documents/:docId/download', listenerDocumentCtrl.downloadDocument);

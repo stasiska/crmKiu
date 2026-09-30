@@ -56,6 +56,34 @@ exports.generateApplication = async (req, res, next) => {
 };
 
 
+// POST /api/listeners/:id/documents/personal-data-consent - генерация согласия
+exports.generatePersonalDataConsent = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const buffer = await documentService.generateListenerPersonalDataConsent(parseInt(id, 10));
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="personal_data_consent_${id}_${Date.now()}.docx"`);
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/listeners/:id/documents/personal-data-distribution-consent
+exports.generatePersonalDataDistributionConsent = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const buffer = await documentService.generateListenerPersonalDataDistributionConsent(parseInt(id, 10));
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="personal_data_distribution_consent_${id}_${Date.now()}.docx"`);
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // POST /api/listeners/:id/documents/upload - загрузка готового документа
 exports.uploadDocument = async (req, res, next) => {
   try {

@@ -47,8 +47,9 @@ async function createOrganization(req, res) {
     }
 
     const id = await db.createOrganization(req.body);
+    const linked = await db.autoLinkRecipientsByInn(req.user.id, id);
     const organization = await db.getOrganizationById(id);
-    res.status(201).json(organization);
+    res.status(201).json({ ...organization, linkedRecipients: linked.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -86,8 +87,9 @@ async function updateOrganization(req, res) {
       return res.status(500).json({ error: 'Не удалось обновить организацию' });
     }
 
+    const linked = await db.autoLinkRecipientsByInn(req.user.id, id);
     const organization = await db.getOrganizationById(id);
-    res.json(organization);
+    res.json({ ...organization, linkedRecipients: linked.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -70,7 +70,7 @@ const CommentsModal = ({ recipient, onClose }) => {
     >
       <div style={{ background: 'white', borderRadius: '12px', maxWidth: '600px', width: '100%', padding: '24px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0 }}>📝 История комментариев</h3>
+          <h3 style={{ margin: 0 }}>📝 История записи</h3>
           <span style={{ fontSize: '14px', color: '#6b7280' }}>{recipient.email}</span>
         </div>
 
@@ -78,7 +78,7 @@ const CommentsModal = ({ recipient, onClose }) => {
           {loading ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>Загрузка...</div>
           ) : comments.length === 0 ? (
-            <div style={{ color: '#6b7280', textAlign: 'center' }}>Нет комментариев</div>
+            <div style={{ color: '#6b7280', textAlign: 'center' }}>Нет записей в истории</div>
           ) : (
             comments.map(c => (
               <div key={c.id} style={{ borderBottom: '1px solid #edf0f4', padding: '10px 0' }}>
@@ -86,7 +86,7 @@ const CommentsModal = ({ recipient, onClose }) => {
                   <strong>{c.author_name || 'Пользователь'}</strong>
                   <span>{formatDate(c.created_at)}</span>
                 </div>
-                <div style={{ marginTop: '4px', fontSize: '14px', color: '#1f2937' }}>{c.comment}</div>
+                <div style={{ marginTop: '4px', fontSize: '14px', color: '#1f2937', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{c.comment}</div>
               </div>
             ))
           )}

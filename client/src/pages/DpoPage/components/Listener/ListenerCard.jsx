@@ -2,8 +2,23 @@ import React, { useState, useEffect } from 'react';
 import ListenerGroupHistory from '../Listeners/ListenerGroupHistory';
 import ListenerNotes from './ListenerNotes';
 import ContractGenerationModal from '../Listeners/ContractGenerationModal';
-import { fetchListenerGroupHistory, fetchListenerDocuments, downloadListenerDocument, deleteListenerDocument, uploadListenerDocument, generateListenerApplication } from '../../../../api';
+import { fetchListenerGroupHistory, fetchListenerDocuments, downloadListenerDocument, deleteListenerDocument, uploadListenerDocument, generateListenerApplication, generateListenerPersonalDataConsent, generateListenerPersonalDataDistributionConsent } from '../../../../api';
 import './ListenerCard.css';
+
+const consentDocuments = [
+  {
+    code: 'personal-data',
+    label: 'Согласие на обработку персональных данных',
+    generate: generateListenerPersonalDataConsent,
+    filePrefix: 'Согласие_на_обработку_персональных_данных'
+  },
+  {
+    code: 'personal-data-distribution',
+    label: 'Согласие на распространение персональных данных',
+    generate: generateListenerPersonalDataDistributionConsent,
+    filePrefix: 'Согласие_на_распространение_персональных_данных'
+  }
+];
 
 const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization }) => {
   const [activeTab, setActiveTab] = useState('info');
@@ -12,6 +27,8 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
   const [groups, setGroups] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [uploadingGroupId, setUploadingGroupId] = useState(null);
+  const [generatingConsent, setGeneratingConsent] = useState(null);
+  const [consentError, setConsentError] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'documents') {
@@ -123,6 +140,38 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
     } catch (err) {
       console.error('Ошибка генерации заявления:', err);
       alert('Ошибка генерации заявления: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleGenerateConsent = async (code) => {
+    const consent = consentDocuments.find(document => document.code === code);
+    if (!consent || generatingConsent) return;
+
+    setGeneratingConsent(code);
+    setConsentError(null);
+    try {
+      const blob = await consent.generate(listener.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${consent.filePrefix}_${listener.last_name}_${Date.now()}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error(`Ошибка генерации документа «${consent.label}»:`, err);
+      let message = err.response?.data?.error || err.message;
+      if (err.response?.data instanceof Blob) {
+        try {
+          message = JSON.parse(await err.response.data.text()).error || message;
+        } catch {
+          // The server may return a non-JSON error body.
+        }
+      }
+      setConsentError(`${consent.label}: ${message}`);
+    } finally {
+      setGeneratingConsent(null);
     }
   };
 
@@ -311,6 +360,21 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
               <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>
                 Генерация документов
               </h4>
+              <select
+                aria-label="Сгенерировать согласие"
+                onChange={(event) => {
+                  handleGenerateConsent(event.target.value);
+                  event.target.value = '';
+                }}
+                disabled={Boolean(generatingConsent)}
+                style={{ display: 'block', maxWidth: '100%', padding: '8px 12px', marginBottom: '16px', background: '#1557a6', color: 'white', border: 'none', borderRadius: '6px', cursor: generatingConsent ? 'wait' : 'pointer', fontSize: '14px' }}
+              >
+                <option value="">{generatingConsent ? 'Генерация согласия...' : 'Выбрать согласие...'}</option>
+                {consentDocuments.map((document) => (
+                  <option key={document.code} value={document.code}>{document.label}</option>
+                ))}
+              </select>
+              {consentError && <p role="alert" style={{ color: '#b91c1c', fontSize: '14px', margin: '0 0 16px' }}>{consentError}</p>}
 
               {console.log('Вкладка документы, количество групп:', groups.length, groups)}
 

@@ -193,7 +193,7 @@ const RecipientsTable = ({ onRemind }) => {
                     style={{ background: r.hasSent ? '#fff3cd' : 'transparent' }}
                     onDoubleClick={() => setEditModal(r)}
                   >
-                    <td style={{ padding: '11px 10px', textAlign: 'center' }}>
+                    <td style={{ padding: '11px 10px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isChecked}

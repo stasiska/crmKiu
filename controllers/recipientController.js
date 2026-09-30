@@ -4,7 +4,7 @@ const { parseExcel } = require('../services/excelService');
 
 async function createRecipient(req, res) {
   try {
-    const recipient = await db.createRecipient(req.body);
+    const recipient = await db.createRecipient(req.body, req.user.id);
     res.status(201).json(recipient);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -27,8 +27,8 @@ async function deleteRecipient(req, res) {
 async function importRecipients(req, res) {
   try {
     const rows = parseExcel(req.file.buffer);
-    const count = await db.addRecipients(rows);
-    res.json({ imported: count });
+    const result = await db.addRecipients(rows, req.user.id);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -42,11 +42,13 @@ async function getRecipients(req, res) {
       organization: req.query.organization,
       search: req.query.search,
     };
+    const linked = await db.autoLinkRecipientsByInn(req.user.id);
+    const linksByRecipient = new Map(linked.map(link => [link.recipientId, link]));
     const recipients = await db.getRecipients(filters);
     const result = await Promise.all(recipients.map(async (r) => {
       const sent = await db.checkDuplicate(r.email, config.duplicateDays);
       const lastSentAt = await db.getLastSentDate(r.email);
-      return { ...r, hasSent: sent, last_sent_at: lastSentAt };
+      return { ...r, hasSent: sent, last_sent_at: lastSentAt, organizationLink: linksByRecipient.get(r.id) || null };
     }));
     res.json(result);
   } catch (err) {

@@ -27,7 +27,10 @@ const ImportArea = () => {
 
     try {
       const result = await importRecipients(file);
-      setUploadStatus(`Импортировано: ${result.imported} записей`);
+      setUploadStatus(`Добавлено: ${result.imported}; обновлено: ${result.updated}; привязано по ИНН: ${result.linked}`);
+      if (result.linked > 0) {
+        alert(`Автоматически привязано по ИНН: ${result.linked} записей. История синхронизирована.`);
+      }
       await loadRecipients();
       setFile(null);
       document.getElementById('excelFile').value = '';

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { updateRecipient } from '../../../api';
+import React, { useState, useEffect } from 'react';
+import { updateRecipient, getRecipientOrganizationLink } from '../../../api';
 
 const FIELDS = [
   { key: 'email', label: 'Email', readOnly: true },
@@ -9,6 +9,7 @@ const FIELDS = [
   { key: 'position', label: 'Должность' },
   { key: 'manager_name', label: 'ФИО руководителя' },
   { key: 'direction', label: 'Наименование направления' },
+  { key: 'inn', label: 'ИНН' },
 ];
 
 const RecipientEditModal = ({ recipient, onClose, onSaved }) => {
@@ -17,6 +18,27 @@ const RecipientEditModal = ({ recipient, onClose, onSaved }) => {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [linkInfo, setLinkInfo] = useState(null);
+  const [loadingLink, setLoadingLink] = useState(true);
+
+  useEffect(() => {
+    loadLinkInfo();
+  }, [recipient.id]);
+
+  const loadLinkInfo = async () => {
+    try {
+      setLoadingLink(true);
+      const info = await getRecipientOrganizationLink(recipient.id);
+      setLinkInfo(info);
+      if (info.linkedNow) {
+        alert(`ИНН ${info.inn} привязан к организации «${info.organization.name}». История синхронизирована.`);
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки информации о связи:', err);
+    } finally {
+      setLoadingLink(false);
+    }
+  };
 
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }));
@@ -28,8 +50,12 @@ const RecipientEditModal = ({ recipient, onClose, onSaved }) => {
     setError('');
     try {
       const { email, ...updates } = formData;
-      await updateRecipient(recipient.id, updates);
-      if (onSaved) onSaved();
+      const result = await updateRecipient(recipient.id, updates);
+      if (result.organizationLink?.linkedNow) {
+        const link = result.organizationLink;
+        alert(`ИНН ${link.inn} привязан к организации «${link.organization.name}». История синхронизирована.`);
+      }
+      if (onSaved) await onSaved();
       onClose();
     } catch (err) {
       setError('Ошибка сохранения: ' + (err.response?.data?.error || err.message));
@@ -65,6 +91,32 @@ const RecipientEditModal = ({ recipient, onClose, onSaved }) => {
         {error && (
           <div style={{ padding: '10px 14px', background: '#fde8e8', border: '1px solid #f5c6cb', borderRadius: '8px', color: '#991b1b', marginBottom: '14px', fontSize: '13px' }}>
             {error}
+          </div>
+        )}
+
+        {/* Информация о связи с организацией */}
+        {!loadingLink && linkInfo && (
+          <div style={{ padding: '12px 16px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', marginBottom: '16px' }}>
+            {linkInfo.linked ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#0369a1' }}>🔗 Связано с организацией</span>
+                </div>
+                <div style={{ fontSize: '13px', color: '#0c4a6e', marginBottom: '10px' }}>
+                  <strong>{linkInfo.organization?.name || 'Неизвестная организация'}</strong>
+                  {linkInfo.organization?.inn && <span style={{ marginLeft: '8px', color: '#64748b' }}>ИНН: {linkInfo.organization.inn}</span>}
+                </div>
+                <div style={{ fontSize: '13px', color: '#64748b' }}>История синхронизируется автоматически.</div>
+              </>
+            ) : linkInfo.inn ? (
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                Организация с ИНН {linkInfo.inn} не найдена
+              </div>
+            ) : (
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                Укажите ИНН для связи с организацией
+              </div>
+            )}
           </div>
         )}
 

@@ -13,6 +13,7 @@ const OrganizationCard = ({ organization, onClose, onEdit, onDelete }) => {
           <div><strong>Контактное лицо:</strong> {organization.contact_person || '—'}</div>
           <div><strong>Менеджер:</strong> {organization.manager_name || '—'}</div>
           <div><strong>Подразделение:</strong> {organization.department || '—'}</div>
+          <div><strong>ИНН:</strong> {organization.inn || '—'}</div>
         </div>
         <div style={{ marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
           <button onClick={onEdit} className="btn btn-kiu">Редактировать</button>

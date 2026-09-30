@@ -204,7 +204,7 @@ async function runMigrations(pool) {
   CREATE TABLE IF NOT EXISTS organization_notes (
     id SERIAL PRIMARY KEY,
     organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('note', 'plan')),
+    type VARCHAR(50) NOT NULL CHECK (type IN ('note')),
     date TIMESTAMP,
     note TEXT NOT NULL,
     executor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -414,7 +414,7 @@ async function runMigrations(pool) {
       CREATE TABLE IF NOT EXISTS listener_notes (
         id SERIAL PRIMARY KEY,
         listener_id INTEGER NOT NULL REFERENCES listeners(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL CHECK (type IN ('note', 'plan')),
+        type VARCHAR(50) NOT NULL CHECK (type IN ('note')),
         date TIMESTAMP,
         note TEXT NOT NULL,
         executor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -470,8 +470,16 @@ async function runMigrations(pool) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='organization_phone') THEN
           ALTER TABLE recipients ADD COLUMN organization_phone VARCHAR(50);
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='inn') THEN
+          ALTER TABLE recipients ADD COLUMN inn VARCHAR(12);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='organization_id') THEN
+          ALTER TABLE recipients ADD COLUMN organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL;
+        END IF;
       END $$;
     `);
+
+        await client.query(`ALTER TABLE recipients ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`);
 
     // Миграция: добавление attachments в templates
     await client.query(`

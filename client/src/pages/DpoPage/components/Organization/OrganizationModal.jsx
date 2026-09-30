@@ -24,8 +24,10 @@ const OrganizationModal = ({ onClose, onSuccess, initialData }) => {
       data[key] = value;
     }
     try {
-      if (isEdit) await updateOrganization(initialData.id, data);
-      else await createOrganization(data);
+      const result = isEdit ? await updateOrganization(initialData.id, data) : await createOrganization(data);
+      if (result.linkedRecipients > 0) {
+        alert(`Автоматически привязано по ИНН: ${result.linkedRecipients} записей рассылки. История синхронизирована.`);
+      }
       onSuccess();
     } catch (err) {
       setToast({ message: 'Ошибка: ' + err.message, type: 'error' });

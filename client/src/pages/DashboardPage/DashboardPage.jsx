@@ -23,8 +23,13 @@ const DashboardPage = () => {
       ]);
       const grouped = { todo: [], inProgress: [], done: [] };
       tasksData.forEach(task => {
-        if (grouped[task.status]) grouped[task.status].push(task);
-        else grouped.todo.push(task);
+        // Конвертируем snake_case в camelCase для совместимости с фронтендом
+        const normalizedTask = {
+          ...task,
+          assignedTo: task.assigned_to,
+        };
+        if (grouped[task.status]) grouped[task.status].push(normalizedTask);
+        else grouped.todo.push(normalizedTask);
       });
       setTasks(grouped);
       setUsers(usersData);

@@ -37,7 +37,7 @@ const GroupsTable = ({ groups, onRowClick, onEdit, onDelete, loading }) => {
                   {g.status || 'набор'}
                 </span>
               </td>
-              <td>{g.hours ? `${String(g.hours).slice(0, 2)} ч` : '—'}</td>
+              <td>{g.hours != null && g.hours !== '' ? `${g.hours} ч` : '—'}</td>
               <td>{g.format || '—'}</td>
               <td style={{ textAlign: 'center' }}>{g.listeners_count || 0}</td>
               <td style={{ textAlign: 'center' }}>

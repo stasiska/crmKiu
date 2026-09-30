@@ -87,6 +87,10 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await fetchRecipients(filters);
       setRecipients(data);
+      const linked = data.filter(recipient => recipient.organizationLink?.linkedNow);
+      if (linked.length) {
+        alert(`Автоматически привязано по ИНН: ${linked.length} записей. История синхронизирована.`);
+      }
     } catch (e) {
       setError('Ошибка загрузки получателей: ' + e.message);
     } finally {

@@ -34,6 +34,10 @@ class EmailService extends EventEmitter {
       throw new Error(`Отправитель с id ${senderId} не найден`);
     }
 
+    // Получаем имя пользователя для логирования
+    const user = await db.getUserById(userId);
+    const userName = user ? user.name : 'Пользователь';
+
     // Пароль уже расшифрован в db.getSender()
     // Проверяем SMTP-соединение
     const transporter = nodemailer.createTransport({
@@ -124,6 +128,18 @@ class EmailService extends EventEmitter {
           body_preview: html.slice(0, 200),
           status: 'sent',
         });
+
+        // Автоматически добавляем комментарий об отправке
+        const sendDate = new Date().toLocaleString('ru-RU', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        const commentText = `Отправлено письмо от ${sender.email} в ${sendDate} пользователем ${userName}. Тема: "${subjectPersonalized}"`;
+        await db.addComment(recipient.id, userId, commentText);
+
         sentCount++;
         this.emit('progress', {
           index: i + 1,

@@ -285,6 +285,60 @@ async function generateListenerApplication(listenerId, groupId) {
   return renderTemplate(template.file_data, data);
 }
 
+/**
+ * Генерация согласия слушателя на обработку персональных данных
+ */
+async function generateListenerPersonalDataConsent(listenerId) {
+  const listener = await db.getListenerById(listenerId);
+  if (!listener) throw new Error('Слушатель не найден');
+
+  const template = await db.getDocumentTemplate('listener_personal_data_consent');
+  if (!template) throw new Error('Шаблон "listener_personal_data_consent" не найден');
+
+  const data = {
+    last_name: listener.last_name || '',
+    first_name: listener.first_name || '',
+    middle_name: listener.middle_name || '',
+    full_name: [listener.last_name, listener.first_name, listener.middle_name].filter(Boolean).join(' '),
+    identity_document: listener.identity_document || '',
+    document_series: listener.document_series || '',
+    document_number: listener.document_number || '',
+    issued_by: listener.issued_by || '',
+    registration_address: listener.registration_address || '',
+    residence_address: listener.residence_address || '',
+    birth_date: formatDate(listener.birth_date),
+    current_date: formatDate(new Date())
+  };
+  return renderTemplate(template.file_data, data);
+}
+
+async function generateListenerPersonalDataDistributionConsent(listenerId) {
+  const listener = await db.getListenerById(listenerId);
+  if (!listener) throw new Error('Слушатель не найден');
+
+  const template = await db.getDocumentTemplate('listener_personal_data_distribution_consent');
+  if (!template) throw new Error('Шаблон "listener_personal_data_distribution_consent" не найден');
+
+  const now = new Date();
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  const initials = [listener.first_name, listener.middle_name].filter(Boolean).map(name => `${name[0]}.`).join('');
+  const data = {
+    last_name: listener.last_name || '',
+    first_name: listener.first_name || '',
+    middle_name: listener.middle_name || '',
+    full_name: [listener.last_name, listener.first_name, listener.middle_name].filter(Boolean).join(' '),
+    phone: listener.phone || '',
+    email: listener.email || '',
+    registration_address: listener.registration_address || '',
+    name_initials: [listener.last_name, initials].filter(Boolean).join(' '),
+    current_day: String(now.getDate()).padStart(2, '0'),
+    current_month: months[now.getMonth()],
+    current_year: String(now.getFullYear()),
+    current_date: formatDate(now)
+  };
+  return renderTemplate(template.file_data, data);
+}
+
 function buildListenerApplicationData(listener, group) {
   const currentDate = new Date();
 
@@ -477,4 +531,6 @@ module.exports = {
   generateDiplomaOrderSplit,
   generateListenerContract,
   generateListenerApplication,
+  generateListenerPersonalDataConsent,
+  generateListenerPersonalDataDistributionConsent,
 };

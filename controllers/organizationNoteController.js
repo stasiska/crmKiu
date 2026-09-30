@@ -14,6 +14,7 @@ async function getNotes(req, res) {
       type: req.query.type, // 'note' или 'plan'
     };
 
+    await db.autoLinkRecipientsByInn(req.user.id, organizationId);
     const notes = await db.getOrganizationNotes(organizationId, filters);
     res.json(notes);
   } catch (err) {

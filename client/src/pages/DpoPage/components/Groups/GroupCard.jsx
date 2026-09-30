@@ -110,7 +110,7 @@ const GroupCard = ({ group, onClose, onEdit, onDelete }) => {
                 }
               />
               <Field label="Формат обучения" value={group.format} />
-              <Field label="Часы" value={group.hours ? `${String(group.hours).slice(0, 2)} ч` : '—'} />
+              <Field label="Часы" value={group.hours != null && group.hours !== '' ? `${group.hours} ч` : '—'} />
               <Field label="Количество слушателей" value={group.listeners_count || 0} />
               <Field
                 label="Дата начала"

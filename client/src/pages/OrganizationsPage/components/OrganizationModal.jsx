@@ -13,6 +13,7 @@ const OrganizationModal = ({ onClose, onSuccess, initialData }) => {
     contact_person: '',
     manager_id: '',
     department: '',
+    inn: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -26,6 +27,7 @@ const OrganizationModal = ({ onClose, onSuccess, initialData }) => {
         contact_person: initialData.contact_person || '',
         manager_id: initialData.manager_id || '',
         department: initialData.department || '',
+        inn: initialData.inn || '',
       });
     }
   }, [initialData]);
@@ -36,8 +38,10 @@ const OrganizationModal = ({ onClose, onSuccess, initialData }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isEdit) await updateOrganization(initialData.id, form);
-      else await createOrganization(form);
+      const result = isEdit ? await updateOrganization(initialData.id, form) : await createOrganization(form);
+      if (result.linkedRecipients > 0) {
+        alert(`Автоматически привязано по ИНН: ${result.linkedRecipients} записей рассылки. История синхронизирована.`);
+      }
       onSuccess();
     } catch (err) {
       alert('Ошибка: ' + err.message);
@@ -62,6 +66,7 @@ const OrganizationModal = ({ onClose, onSuccess, initialData }) => {
               {users?.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
             <input name="department" value={form.department} onChange={handleChange} placeholder="Подразделение" className="form-control" />
+            <input name="inn" value={form.inn} onChange={handleChange} placeholder="ИНН" className="form-control" />
           </div>
           <div style={{ marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <button type="button" onClick={onClose} style={{ background: '#e5e7eb', padding: '8px 16px', border: 'none', borderRadius: '6px' }}>Отмена</button>

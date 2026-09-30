@@ -46,6 +46,14 @@ export const updateRecipientComment = (id, comment) =>
 export const updateRecipient = (id, data) =>
   api.put(`/recipients/${id}`, data).then(r => r.data);
 
+// ===== СИНХРОНИЗАЦИЯ ПОЛУЧАТЕЛЕЙ И ОРГАНИЗАЦИЙ =====
+export const linkRecipientToOrganization = (id) =>
+  api.post(`/recipients/${id}/link-organization`).then(r => r.data);
+export const syncRecipientToOrganization = (id) =>
+  api.post(`/recipients/${id}/sync-to-organization`).then(r => r.data);
+export const getRecipientOrganizationLink = (id) =>
+  api.get(`/recipients/${id}/organization-link`).then(r => r.data);
+
 // ===== ШАБЛОНЫ =====
 export const fetchTemplates = () => api.get('/templates').then(r => r.data);
 export const fetchTemplate = (id) => api.get(`/templates/${id}`).then(r => r.data);
@@ -158,6 +166,20 @@ export const generateListenerContract = (listenerId, data) =>
 export const generateListenerApplication = (listenerId, data) =>
   api.post(`/listeners/${listenerId}/documents/application`, data, { responseType: 'blob' }).then(r => r.data);
 
+export const generateListenerPersonalDataConsent = (listenerId) =>
+  api.post(`/listeners/${listenerId}/documents/personal-data-consent`, {}, { responseType: 'blob' }).then(r => r.data);
+
+export const generateListenerPersonalDataDistributionConsent = (listenerId) =>
+  api.post(`/listeners/${listenerId}/documents/personal-data-distribution-consent`, {}, { responseType: 'blob' }).then(r => r.data);
+
+export const fetchDocumentTemplates = () =>
+  api.get('/document-templates').then(r => r.data);
+
+export const createDocumentTemplate = (formData) =>
+  api.post('/document-templates', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+
+export const updateDocumentTemplate = (id, formData) =>
+  api.put(`/document-templates/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
 
 export const uploadListenerDocument = (listenerId, file, metadata) => {
   const formData = new FormData();

@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import SendersManager from './components/SendersManager';
 import TemplatesManager from './components/TemplatesManager';
+import ConsentTemplateManager from './components/ConsentTemplateManager';
 import UsersManager from './components/UsersManager';
 import DangerZone from './components/DangerZone';
 
@@ -65,7 +66,12 @@ const SettingsPage = () => {
       </div>
 
       {activeTab === 'senders' && <SendersManager />}
-      {activeTab === 'templates' && <TemplatesManager />}
+      {activeTab === 'templates' && (
+        <>
+          <TemplatesManager />
+          {isAdmin && <ConsentTemplateManager />}
+        </>
+      )}
       {activeTab === 'users' && <UsersManager />}
       <DangerZone />
     </div>
