@@ -1,19 +1,60 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { AppContext } from '../../../../context/AppContext';
 import { createListener, updateListener } from '../../../../api';
 import Toast from '../../../../components/Toast';
 
+const Section = ({ title, children }) => (
+  <div style={{ marginBottom: '20px' }}>
+    <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1f2937', margin: '0 0 10px 0', borderBottom: '2px solid #e5e7eb', paddingBottom: '6px' }}>
+      {title}
+    </h4>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+      {children}
+    </div>
+  </div>
+);
+
 const ListenerModal = ({ onClose, onSuccess, initialData }) => {
   const isEdit = !!initialData;
-  const { users, orgs } = useContext(AppContext);
+  const { orgs } = useContext(AppContext);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
-  const [formKey, setFormKey] = useState(0);
+  const [sameAddress, setSameAddress] = useState(false);
+  const [addresses, setAddresses] = useState(() => ({
+    residence_city: initialData?.residence_city || '',
+    residence_street: initialData?.residence_street || '',
+    residence_house: initialData?.residence_house || '',
+    residence_apartment: initialData?.residence_apartment || '',
+    registration_city: initialData?.registration_city || '',
+    registration_street: initialData?.registration_street || '',
+    registration_house: initialData?.registration_house || '',
+    registration_apartment: initialData?.registration_apartment || '',
+  }));
 
-  useEffect(() => {
-    // При изменении initialData увеличиваем ключ формы, чтобы пересоздать поля
-    setFormKey(prev => prev + 1);
-  }, [initialData]);
+  const handleAddressCheckbox = (e) => {
+    const checked = e.target.checked;
+    setSameAddress(checked);
+
+    if (checked) {
+      setAddresses((current) => ({
+        ...current,
+        registration_city: current.residence_city,
+        registration_street: current.residence_street,
+        registration_house: current.residence_house,
+        registration_apartment: current.residence_apartment,
+      }));
+    }
+  };
+
+  const handleAddressChange = (field, value) => {
+    setAddresses((current) => {
+      const next = { ...current, [field]: value };
+      if (sameAddress && field.startsWith('residence_')) {
+        next[field.replace('residence_', 'registration_')] = value;
+      }
+      return next;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,27 +65,23 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
     for (let [key, value] of formData.entries()) {
       data[key] = value;
     }
+    if (sameAddress) {
+      data.registration_city = addresses.residence_city;
+      data.registration_street = addresses.residence_street;
+      data.registration_house = addresses.residence_house;
+      data.registration_apartment = addresses.residence_apartment;
+    }
     try {
       if (isEdit) await updateListener(initialData.id, data);
       else await createListener(data);
       onSuccess();
     } catch (err) {
-      setToast({ message: 'Ошибка: ' + err.message, type: 'error' });
+      const errorMessage = err.response?.data?.error || err.message || 'Неизвестная ошибка';
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
   };
-
-  const Section = ({ title, children }) => (
-    <div style={{ marginBottom: '20px' }}>
-      <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1f2937', margin: '0 0 10px 0', borderBottom: '2px solid #e5e7eb', paddingBottom: '6px' }}>
-        {title}
-      </h4>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-        {children}
-      </div>
-    </div>
-  );
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -53,7 +90,7 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
           {isEdit ? 'Редактировать слушателя' : 'Новый слушатель'}
         </h3>
 
-        <form key={formKey} onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <Section title="Основная информация">
             <div>
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Фамилия *</label>
@@ -69,7 +106,7 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
             </div>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дата рождения *</label>
-              <input type="date" name="birth_date" defaultValue={initialData?.birth_date || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <input type="date" name="birth_date" defaultValue={initialData?.birth_date ? new Date(initialData.birth_date).toISOString().split('T')[0] : ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Пол *</label>
@@ -112,18 +149,52 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
             </div>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>СНИЛС *</label>
-              <input name="snils" defaultValue={initialData?.snils || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <input name="snils" defaultValue={initialData?.snils || ''} required placeholder="XXX-XXX-XXX YY" className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
           </Section>
 
-          <Section title="Адреса">
+          <Section title="Адрес проживания">
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Адрес проживания *</label>
-              <input name="residence_address" defaultValue={initialData?.residence_address || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Город *</label>
+              <input name="residence_city" value={addresses.residence_city} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} onChange={(e) => handleAddressChange('residence_city', e.target.value)} />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Адрес регистрации *</label>
-              <input name="registration_address" defaultValue={initialData?.registration_address || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Улица *</label>
+              <input name="residence_street" value={addresses.residence_street} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} onChange={(e) => handleAddressChange('residence_street', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дом *</label>
+              <input name="residence_house" value={addresses.residence_house} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} onChange={(e) => handleAddressChange('residence_house', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Квартира</label>
+              <input name="residence_apartment" value={addresses.residence_apartment} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} onChange={(e) => handleAddressChange('residence_apartment', e.target.value)} />
+            </div>
+          </Section>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={sameAddress} onChange={handleAddressCheckbox} />
+              Адрес регистрации совпадает с адресом проживания
+            </label>
+          </div>
+
+          <Section title="Адрес регистрации">
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Город *</label>
+              <input name="registration_city" value={addresses.registration_city} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} disabled={sameAddress} onChange={(e) => handleAddressChange('registration_city', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Улица *</label>
+              <input name="registration_street" value={addresses.registration_street} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} disabled={sameAddress} onChange={(e) => handleAddressChange('registration_street', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дом *</label>
+              <input name="registration_house" value={addresses.registration_house} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} disabled={sameAddress} onChange={(e) => handleAddressChange('registration_house', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Квартира</label>
+              <input name="registration_apartment" value={addresses.registration_apartment} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} disabled={sameAddress} onChange={(e) => handleAddressChange('registration_apartment', e.target.value)} />
             </div>
           </Section>
 
@@ -154,17 +225,6 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
                 <option value="">Не выбрано</option>
                 {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
               </select>
-            </div>
-            <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Менеджер</label>
-              <select name="manager_id" defaultValue={initialData?.manager_id || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }}>
-                <option value="">Не выбран</option>
-                {users?.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Подразделение</label>
-              <input name="department" defaultValue={initialData?.department || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
           </Section>
 

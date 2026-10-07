@@ -839,7 +839,7 @@ async function getOrganizations(filters = {}) {
   let idx = 1;
 
   if (filters.search) {
-    sql += ` AND o.name ILIKE $${idx}`;
+    sql += ` AND (o.name ILIKE $${idx} OR o.full_name ILIKE $${idx})`;
     values.push(`%${filters.search}%`);
     idx++;
   }
@@ -873,34 +873,30 @@ async function getOrganizationById(id) {
 }
 
 async function createOrganization(org) {
-  const { name, address, email, phone, contact_person, manager_id, department, ogrn, okpo, okved, okfs, okopf, okato, inn, kpp } = org;
+  const {
+    name, full_name, address, email, phone, contact_person,
+    inn, kpp, settlement_account, bank_name, correspondent_account, bik,
+    ogrn, bank_inn, bank_kpp
+  } = org;
   const res = await query(
-    `INSERT INTO organizations (name, address, email, phone, contact_person, manager_id, department, ogrn, okpo, okved, okfs, okopf, okato, inn, kpp)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
+    `INSERT INTO organizations (
+      name, full_name, address, email, phone, contact_person,
+      inn, kpp, settlement_account, bank_name, correspondent_account, bik,
+      ogrn, bank_inn, bank_kpp
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
     [
-      name,
-      address || null,
-      email || null,
-      phone || null,
-      contact_person || null,
-      manager_id || null,
-      department || null,
-      ogrn || null,
-      okpo || null,
-      okved || null,
-      okfs || null,
-      okopf || null,
-      okato || null,
-      inn || null,
-      kpp || null
+      name, full_name || null, address || null, email || null, phone || null, contact_person || null,
+      inn, kpp, settlement_account, bank_name, correspondent_account, bik,
+      ogrn || null, bank_inn || null, bank_kpp || null
     ]
   );
   return res.rows[0].id;
 }
 
 const ALLOWED_ORGANIZATION_FIELDS = [
-  'name', 'address', 'email', 'phone', 'contact_person', 'manager_id', 'department',
-  'ogrn', 'okpo', 'okved', 'okfs', 'okopf', 'okato', 'inn', 'kpp'
+  'name', 'full_name', 'address', 'email', 'phone', 'contact_person',
+  'inn', 'kpp', 'settlement_account', 'bank_name', 'correspondent_account', 'bik',
+  'ogrn', 'bank_inn', 'bank_kpp'
 ];
 
 async function updateOrganization(id, updates) {
@@ -989,6 +985,7 @@ async function getListeners(filters = {}) {
   const sql = `SELECT l.*,
     CONCAT(l.last_name, ' ', l.first_name, COALESCE(' ' || l.middle_name, '')) as full_name,
     o.name as organization_name,
+    COALESCE(NULLIF(o.full_name, ''), o.name) as organization_full_name,
     u.name as manager_name
     FROM listeners l
     LEFT JOIN organizations o ON l.organization_id = o.id
@@ -1007,6 +1004,7 @@ async function getListenerById(id) {
     `SELECT l.*,
      CONCAT(l.last_name, ' ', l.first_name, COALESCE(' ' || l.middle_name, '')) as full_name,
      o.name as organization_name,
+     COALESCE(NULLIF(o.full_name, ''), o.name) as organization_full_name,
      u.name as manager_name
      FROM listeners l
      LEFT JOIN organizations o ON l.organization_id = o.id
@@ -1021,7 +1019,9 @@ async function createListener(listener) {
   const {
     last_name, first_name, middle_name, birth_date, gender, citizenship,
     identity_document, document_series, document_number, issued_by, snils,
-    residence_address, registration_address, phone, email, education_level,
+    residence_city, residence_street, residence_house, residence_apartment,
+    registration_city, registration_street, registration_house, registration_apartment,
+    phone, email, education_level,
     education_series, education_number, organization_id, manager_id, department
   } = listener;
 
@@ -1029,14 +1029,18 @@ async function createListener(listener) {
     `INSERT INTO listeners (
       last_name, first_name, middle_name, birth_date, gender, citizenship,
       identity_document, document_series, document_number, issued_by, snils,
-      residence_address, registration_address, phone, email, education_level,
+      residence_city, residence_street, residence_house, residence_apartment,
+      registration_city, registration_street, registration_house, registration_apartment,
+      phone, email, education_level,
       education_series, education_number, organization_id, manager_id, department
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
     RETURNING id`,
     [
       last_name, first_name, middle_name || null, birth_date || null, gender || null, citizenship || null,
       identity_document || null, document_series || null, document_number || null, issued_by || null, snils || null,
-      residence_address || null, registration_address || null, phone || null, email || null, education_level || null,
+      residence_city || null, residence_street || null, residence_house || null, residence_apartment || null,
+      registration_city || null, registration_street || null, registration_house || null, registration_apartment || null,
+      phone || null, email || null, education_level || null,
       education_series || null, education_number || null, organization_id || null, manager_id || null, department || null
     ]
   );
@@ -1046,7 +1050,9 @@ async function createListener(listener) {
 const ALLOWED_LISTENER_FIELDS = [
   'last_name', 'first_name', 'middle_name', 'birth_date', 'gender', 'citizenship',
   'identity_document', 'document_series', 'document_number', 'issued_by', 'snils',
-  'residence_address', 'registration_address', 'phone', 'email', 'education_level',
+  'residence_city', 'residence_street', 'residence_house', 'residence_apartment',
+  'registration_city', 'registration_street', 'registration_house', 'registration_apartment',
+  'phone', 'email', 'education_level',
   'education_series', 'education_number', 'organization_id', 'manager_id', 'department'
 ];
 

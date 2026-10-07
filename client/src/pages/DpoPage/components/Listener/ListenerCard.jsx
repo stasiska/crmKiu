@@ -253,9 +253,18 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
                 <Field label="СНИЛС" value={listener.snils} />
               </Section>
 
-              <Section title="Адреса">
-                <Field label="Проживания" value={listener.residence_address} />
-                <Field label="Регистрации" value={listener.registration_address} />
+              <Section title="Адрес проживания">
+                <Field label="Город" value={listener.residence_city} />
+                <Field label="Улица" value={listener.residence_street} />
+                <Field label="Дом" value={listener.residence_house} />
+                <Field label="Квартира" value={listener.residence_apartment} />
+              </Section>
+
+              <Section title="Адрес регистрации">
+                <Field label="Город" value={listener.registration_city} />
+                <Field label="Улица" value={listener.registration_street} />
+                <Field label="Дом" value={listener.registration_house} />
+                <Field label="Квартира" value={listener.registration_apartment} />
               </Section>
 
               <Section title="Образование">

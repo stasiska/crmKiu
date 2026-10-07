@@ -1,4 +1,5 @@
 const db = require('../db');
+const organizationValidator = require('../validators/organizationValidator');
 
 async function getOrganizations(req, res) {
   try {
@@ -29,24 +30,17 @@ async function getOrganization(req, res) {
 
 async function createOrganization(req, res) {
   try {
-    // Преобразование пустых строк в null для необязательных полей
-    const nullableFields = [
-      'manager_id', 'address', 'email', 'phone', 'contact_person', 'department',
-      'ogrn', 'okpo', 'okved', 'okfs', 'okopf', 'okato', 'inn', 'kpp'
-    ];
-    nullableFields.forEach(field => {
-      if (req.body[field] === '') req.body[field] = null;
+    // Реквизиты и контактные лица принадлежат организации, а не сотруднику КИУ.
+    ['manager_id', 'department', 'okpo', 'okved', 'okfs', 'okopf', 'okato'].forEach((field) => {
+      delete req.body[field];
     });
 
-    // Проверка существования manager_id
-    if (req.body.manager_id) {
-      const manager = await db.getUserById(req.body.manager_id);
-      if (!manager) {
-        return res.status(400).json({ error: 'Менеджер с указанным ID не найден' });
-      }
+    const { error, value } = organizationValidator.organizationSchema.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ error: error.details.map((detail) => detail.message).join('; ') });
     }
 
-    const id = await db.createOrganization(req.body);
+    const id = await db.createOrganization(value);
     const linked = await db.autoLinkRecipientsByInn(req.user.id, id);
     const organization = await db.getOrganizationById(id);
     res.status(201).json({ ...organization, linkedRecipients: linked.length });
@@ -59,30 +53,21 @@ async function updateOrganization(req, res) {
   try {
     const id = parseInt(req.params.id);
 
-    // Проверка существования организации
     const existing = await db.getOrganizationById(id);
     if (!existing) {
       return res.status(404).json({ error: 'Организация не найдена' });
     }
 
-    // Преобразование пустых строк в null для необязательных полей
-    const nullableFields = [
-      'manager_id', 'address', 'email', 'phone', 'contact_person', 'department',
-      'ogrn', 'okpo', 'okved', 'okfs', 'okopf', 'okato', 'inn', 'kpp'
-    ];
-    nullableFields.forEach(field => {
-      if (req.body[field] === '') req.body[field] = null;
+    ['manager_id', 'department', 'okpo', 'okved', 'okfs', 'okopf', 'okato'].forEach((field) => {
+      delete req.body[field];
     });
 
-    // Проверка существования manager_id
-    if (req.body.manager_id) {
-      const manager = await db.getUserById(req.body.manager_id);
-      if (!manager) {
-        return res.status(400).json({ error: 'Менеджер с указанным ID не найден' });
-      }
+    const { error, value } = organizationValidator.updateOrganizationSchema.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ error: error.details.map((detail) => detail.message).join('; ') });
     }
 
-    const ok = await db.updateOrganization(id, req.body);
+    const ok = await db.updateOrganization(id, value);
     if (!ok) {
       return res.status(500).json({ error: 'Не удалось обновить организацию' });
     }

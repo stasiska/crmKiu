@@ -479,7 +479,32 @@ async function runMigrations(pool) {
       END $$;
     `);
 
+        // Добавляем новые поля реквизитов юридических лиц
+        await client.query(`
+          ALTER TABLE organizations
+          ADD COLUMN IF NOT EXISTS full_name VARCHAR(500),
+          ADD COLUMN IF NOT EXISTS settlement_account VARCHAR(20),
+          ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS correspondent_account VARCHAR(20),
+          ADD COLUMN IF NOT EXISTS bik VARCHAR(9),
+          ADD COLUMN IF NOT EXISTS bank_inn VARCHAR(12),
+          ADD COLUMN IF NOT EXISTS bank_kpp VARCHAR(9)
+        `);
+
         await client.query(`ALTER TABLE recipients ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`);
+
+    // Миграция: разделение адресов слушателей на отдельные поля
+    await client.query(`
+      ALTER TABLE listeners
+      ADD COLUMN IF NOT EXISTS residence_city VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS residence_street VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS residence_house VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS residence_apartment VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS registration_city VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS registration_street VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS registration_house VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS registration_apartment VARCHAR(50)
+    `);
 
     // Миграция: добавление attachments в templates
     await client.query(`

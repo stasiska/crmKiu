@@ -27,6 +27,7 @@ const ListenersSection = () => {
   const [viewingListener, setViewingListener] = useState(null);
   const [viewingOrg, setViewingOrg] = useState(null);
   const [addToGroupListener, setAddToGroupListener] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [toast, setToast] = useState(null);
   const [confirm, setConfirm] = useState(null);
 
@@ -118,6 +119,8 @@ const ListenersSection = () => {
         onDelete={handleDelete}
         onAddToGroup={handleAddToGroup}
         loading={listenersLoading}
+        selectedIds={selectedIds}
+        onToggleSelect={setSelectedIds}
       />
 
       <Pagination

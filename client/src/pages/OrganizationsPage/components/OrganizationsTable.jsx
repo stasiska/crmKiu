@@ -8,13 +8,11 @@ const OrganizationsTable = ({ organizations, onEdit, onDelete, onRowClick, loadi
       <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            <th>Название</th>
+            <th>Наименование</th>
             <th>Адрес</th>
             <th>E-mail</th>
             <th>Телефон</th>
             <th>Контактное лицо</th>
-            <th>Менеджер</th>
-            <th>Подразделение</th>
             <th>Действия</th>
           </tr>
         </thead>
@@ -26,8 +24,6 @@ const OrganizationsTable = ({ organizations, onEdit, onDelete, onRowClick, loadi
               <td>{org.email || '—'}</td>
               <td>{org.phone || '—'}</td>
               <td>{org.contact_person || '—'}</td>
-              <td>{org.manager_name || '—'}</td>
-              <td>{org.department || '—'}</td>
               <td>
                 <button onClick={(e) => { e.stopPropagation(); onEdit(org); }}>✏️</button>
                 <button onClick={(e) => { e.stopPropagation(); onDelete(org.id); }}>🗑️</button>

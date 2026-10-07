@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
-const ActionDropdown = ({ onEdit, onPrint, onAddToGroup, onContract, onInvoice, onDelete }) => {
+const ActionDropdown = ({ onEdit, onPrint, onAddToGroup, onContract, onInvoice, onDelete, hideContract = false }) => {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef();
@@ -120,22 +120,24 @@ const ActionDropdown = ({ onEdit, onPrint, onAddToGroup, onContract, onInvoice, 
       >
         👥 Добавить в группу
       </button>
-      <button
-        onClick={(e) => handleAction(e, onContract)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 16px',
-          border: 'none',
-          background: 'none',
-          textAlign: 'left',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#1f2937',
-        }}
-      >
-        📄 Сформировать договор
-      </button>
+      {!hideContract && (
+        <button
+          onClick={(e) => handleAction(e, onContract)}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '8px 16px',
+            border: 'none',
+            background: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#1f2937',
+          }}
+        >
+          📄 Сформировать договор
+        </button>
+      )}
       <button
         onClick={(e) => handleAction(e, onInvoice)}
         style={{

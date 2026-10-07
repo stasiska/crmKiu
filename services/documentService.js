@@ -419,6 +419,7 @@ function buildListenerContractData(listener, group, groupListenerData, options) 
 
     customer_full_name: options.customerFullName || `${listener.last_name || ''} ${listener.first_name || ''} ${listener.middle_name || ''}`.trim(),
     customer_passport: options.customerPassport || '',
+    organization_full_name: listener.organization_full_name || listener.organization_name || '',
 
     listener_full_name: `${listener.last_name || ''} ${listener.first_name || ''} ${listener.middle_name || ''}`.trim(),
 

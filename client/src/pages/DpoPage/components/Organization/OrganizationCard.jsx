@@ -59,7 +59,7 @@ const OrganizationCard = ({ organization, onClose, onEdit, onDelete }) => {
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-content" style={{ maxWidth: '900px', background: '#fff', padding: '28px 32px', borderRadius: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Карточка организации</h3>
+          <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Карточка юридического лица</h3>
           <span style={{ fontSize: '14px', color: '#6b7280' }}>{organization.name}</span>
         </div>
 
@@ -116,30 +116,30 @@ const OrganizationCard = ({ organization, onClose, onEdit, onDelete }) => {
         {activeTab === 'info' && (
           <div>
             <Section title="Основная информация">
-              <Field label="Название" value={organization.name} />
+              <Field label="Краткое наименование" value={organization.name} />
+              <Field label="Полное наименование" value={organization.full_name || organization.name} />
               <Field label="Адрес" value={organization.address} />
               <Field label="Телефон" value={organization.phone} />
               <Field label="E-mail" value={organization.email} />
             </Section>
             <Section title="Контакты и лица">
               <Field label="Контактное лицо" value={organization.contact_person} />
-              <Field label="Менеджер" value={organization.manager_name} />
-              <Field label="Подразделение" value={organization.department} />
             </Section>
           </div>
         )}
 
         {activeTab === 'requisites' && (
           <div>
-            <Section title="Реквизиты">
+            <Section title="Реквизиты организации">
+              <Field label="ИНН организации" value={organization.inn} />
+              <Field label="КПП организации" value={organization.kpp} />
+              <Field label="Расчётный счёт" value={organization.settlement_account} />
+              <Field label="Банк" value={organization.bank_name} />
+              <Field label="Корреспондентский счёт" value={organization.correspondent_account} />
+              <Field label="БИК" value={organization.bik} />
               <Field label="ОГРН" value={organization.ogrn} />
-              <Field label="ОКПО" value={organization.okpo} />
-              <Field label="ОКВЭД" value={organization.okved} />
-              <Field label="ОКФС" value={organization.okfs} />
-              <Field label="ОКОПФ" value={organization.okopf} />
-              <Field label="ОКАТО" value={organization.okato} />
-              <Field label="ИНН" value={organization.inn} />
-              <Field label="КПП" value={organization.kpp} />
+              <Field label="ИНН банка" value={organization.bank_inn} />
+              <Field label="КПП банка" value={organization.bank_kpp} />
             </Section>
           </div>
         )}
