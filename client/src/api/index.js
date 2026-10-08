@@ -114,6 +114,8 @@ export const deleteListener = (id) => api.delete(`/listeners/${id}`).then(r => r
 
 // ===== Группы =====
 export const fetchGroups = (params) => api.get('/groups', { params }).then(r => r.data);
+export const exportGroups = (params) =>
+  api.get('/groups/export', { params, responseType: 'blob' }).then(r => r.data);
 export const fetchGroup = (id) => api.get(`/groups/${id}`).then(r => r.data);
 export const createGroup = (data) => api.post('/groups', data).then(r => r.data);
 export const updateGroup = (id, data) => api.put(`/groups/${id}`, data).then(r => r.data);

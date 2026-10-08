@@ -9,13 +9,14 @@ const GroupsTable = ({ groups, onRowClick, onEdit, onDelete, loading }) => {
       <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            <th>Наименование</th>
+            <th>Наименование курса</th>
+            <th>Статус</th>
+            <th>Количество часов</th>
+            <th>Период обучения</th>
+            <th>Аудитория/Дистант</th>
+            <th style={{ textAlign: 'center' }}>Количество слушателей</th>
             <th>Менеджер</th>
             <th>Подразделение</th>
-            <th>Статус</th>
-            <th>Часы</th>
-            <th>Формат</th>
-            <th style={{ textAlign: 'center' }}>Слушатели</th>
             <th style={{ textAlign: 'center' }}>Действия</th>
           </tr>
         </thead>
@@ -23,8 +24,6 @@ const GroupsTable = ({ groups, onRowClick, onEdit, onDelete, loading }) => {
           {groups.map((g) => (
             <tr key={g.id} onClick={() => onRowClick(g)} style={{ cursor: 'pointer' }}>
               <td>{g.course_name || '—'}</td>
-              <td>{g.manager_name || '—'}</td>
-              <td>{g.branch || '—'}</td>
               <td>
                 <span style={{
                   padding: '2px 8px',
@@ -38,33 +37,24 @@ const GroupsTable = ({ groups, onRowClick, onEdit, onDelete, loading }) => {
                 </span>
               </td>
               <td>{g.hours != null && g.hours !== '' ? `${g.hours} ч` : '—'}</td>
-              <td>{g.format || '—'}</td>
+              <td>{`${g.start_date ? new Date(g.start_date).toLocaleDateString('ru-RU') : '—'} — ${g.end_date ? new Date(g.end_date).toLocaleDateString('ru-RU') : '—'}`}</td>
+              <td>{g.auditorium || g.format || '—'}</td>
               <td style={{ textAlign: 'center' }}>{g.listeners_count || 0}</td>
+              <td>{g.manager_name || '—'}</td>
+              <td>{g.branch || '—'}</td>
               <td style={{ textAlign: 'center' }}>
                 <ActionDropdown
                   onEdit={(e) => {
                     if (e) e.stopPropagation();
                     onEdit(g);
                   }}
-                  onDelete={(e) => {
-                    if (e) e.stopPropagation();
-                    onDelete(g.id);
-                  }}
                   onPrint={(e) => {
                     if (e) e.stopPropagation();
                     alert('Печать в разработке');
                   }}
-                  onAddToGroup={(e) => {
+                  onDelete={(e) => {
                     if (e) e.stopPropagation();
-                    alert('Добавление в группу в разработке');
-                  }}
-                  onContract={(e) => {
-                    if (e) e.stopPropagation();
-                    alert('Формирование договора в разработке');
-                  }}
-                  onInvoice={(e) => {
-                    if (e) e.stopPropagation();
-                    alert('Выставление счёта в разработке');
+                    onDelete(g.id);
                   }}
                 />
               </td>

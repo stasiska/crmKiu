@@ -1,181 +1,116 @@
 const db = require('../db');
+const { buildGroupsExcel } = require('../services/excelService');
 
-// GET /api/groups - Список групп с фильтрами и пагинацией
+function parseGroupFilters(query) {
+  return {
+    search: query.search,
+    manager_id: query.manager_id ? parseInt(query.manager_id, 10) : undefined,
+    status: query.status,
+    format: query.format,
+    hours_min: query.hours_min !== undefined && query.hours_min !== '' ? parseInt(query.hours_min, 10) : undefined,
+    hours_max: query.hours_max !== undefined && query.hours_max !== '' ? parseInt(query.hours_max, 10) : undefined,
+  };
+}
+
 exports.getGroups = async (req, res, next) => {
   try {
-    const { page, limit, search, manager_id, status, hours_min, hours_max } = req.query;
-    const filters = {
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
-      search,
-      manager_id: manager_id ? parseInt(manager_id, 10) : undefined,
-      status,
-      hours_min: hours_min ? parseInt(hours_min, 10) : undefined,
-      hours_max: hours_max ? parseInt(hours_max, 10) : undefined
-    };
-
-    const result = await db.getGroups(filters);
-    res.json(result);
+    const filters = parseGroupFilters(req.query);
+    filters.page = req.query.page ? parseInt(req.query.page, 10) : 1;
+    filters.limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+    res.json(await db.getGroups(filters));
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/groups/:id - Получить группу по ID
+exports.exportGroups = async (req, res, next) => {
+  try {
+    const rows = await db.getGroupsForExport(parseGroupFilters(req.query));
+    const buffer = buildGroupsExcel(rows);
+    const date = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="groups_${date}.xlsx"`);
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getGroup = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const group = await db.getGroupById(parseInt(id, 10));
-
-    if (!group) {
-      return res.status(404).json({ error: 'Группа не найдена' });
-    }
-
+    const group = await db.getGroupById(parseInt(req.params.id, 10));
+    if (!group) return res.status(404).json({ error: 'Группа не найдена' });
     res.json(group);
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/groups - Создать группу
 exports.createGroup = async (req, res, next) => {
   try {
-    // Преобразование пустых строк в null
-    if (req.body.manager_id === '') req.body.manager_id = null;
-    if (req.body.auditorium === '') req.body.auditorium = null;
-    if (req.body.branch === '') req.body.branch = null;
-    if (req.body.hours === '') req.body.hours = null;
-    if (req.body.start_date === '') req.body.start_date = null;
-    if (req.body.end_date === '') req.body.end_date = null;
-    if (req.body.manager_name === '') req.body.manager_name = null;
-    if (req.body.course_price === '') req.body.course_price = null;
-
-    const {
-      manager_id,
-      auditorium,
-      branch,
-      course_name,
-      status,
-      hours,
-      start_date,
-      end_date,
-      format,
-      manager_name,
-      course_price
-    } = req.body;
-
-    // Проверка существования менеджера, если указан
-    if (manager_id) {
-      const manager = await db.getUserById(manager_id);
-      if (!manager) {
-        return res.status(400).json({ error: 'Менеджер с указанным ID не найден' });
-      }
-    }
-
-    const id = await db.createGroup({
-      manager_id,
-      auditorium,
-      branch,
-      course_name,
-      status,
-      hours,
-      start_date,
-      end_date,
-      format,
-      manager_name,
-      course_price
+    ['manager_id', 'auditorium', 'branch', 'hours', 'start_date', 'end_date', 'manager_name', 'course_price'].forEach((field) => {
+      if (req.body[field] === '') req.body[field] = null;
     });
-    const group = await db.getGroupById(id);
-    res.status(201).json(group);
+    const { manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name, course_price } = req.body;
+    if (manager_id && !await db.getUserById(manager_id)) {
+      return res.status(400).json({ error: 'Менеджер с указанным ID не найден' });
+    }
+    const id = await db.createGroup({ manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name, course_price });
+    res.status(201).json(await db.getGroupById(id));
   } catch (err) {
     next(err);
   }
 };
 
-// PUT /api/groups/:id - Обновить группу
 exports.updateGroup = async (req, res, next) => {
   try {
-    const { id } = req.params;
-
-    // Преобразование пустых строк в null
-    if (req.body.manager_id === '') req.body.manager_id = null;
-    if (req.body.auditorium === '') req.body.auditorium = null;
-    if (req.body.branch === '') req.body.branch = null;
-    if (req.body.hours === '') req.body.hours = null;
-    if (req.body.start_date === '') req.body.start_date = null;
-    if (req.body.end_date === '') req.body.end_date = null;
-    if (req.body.manager_name === '') req.body.manager_name = null;
-    if (req.body.course_price === '') req.body.course_price = null;
-
-    const updates = req.body;
-
-    // Проверка существования группы
-    const group = await db.getGroupById(parseInt(id, 10));
-    if (!group) {
-      return res.status(404).json({ error: 'Группа не найдена' });
+    const id = parseInt(req.params.id, 10);
+    ['manager_id', 'auditorium', 'branch', 'hours', 'start_date', 'end_date', 'manager_name', 'course_price'].forEach((field) => {
+      if (req.body[field] === '') req.body[field] = null;
+    });
+    if (!await db.getGroupById(id)) return res.status(404).json({ error: 'Группа не найдена' });
+    if (req.body.manager_id && !await db.getUserById(req.body.manager_id)) {
+      return res.status(400).json({ error: 'Менеджер с указанным ID не найден' });
     }
-
-    // Проверка существования менеджера, если указан
-    if (updates.manager_id) {
-      const manager = await db.getUserById(updates.manager_id);
-      if (!manager) {
-        return res.status(400).json({ error: 'Менеджер с указанным ID не найден' });
-      }
-    }
-
-    const success = await db.updateGroup(parseInt(id, 10), updates);
-    if (!success) {
-      return res.status(400).json({ error: 'Нет полей для обновления' });
-    }
-
-    const updatedGroup = await db.getGroupById(parseInt(id, 10));
-    res.json(updatedGroup);
+    if (!await db.updateGroup(id, req.body)) return res.status(400).json({ error: 'Нет полей для обновления' });
+    res.json(await db.getGroupById(id));
   } catch (err) {
     next(err);
   }
 };
 
-// DELETE /api/groups/:id - Удалить группу
 exports.deleteGroup = async (req, res, next) => {
   try {
-    const { id } = req.params;
-
-    const group = await db.getGroupById(parseInt(id, 10));
-    if (!group) {
-      return res.status(404).json({ error: 'Группа не найдена' });
-    }
-
-    await db.deleteGroup(parseInt(id, 10));
+    const id = parseInt(req.params.id, 10);
+    if (!await db.getGroupById(id)) return res.status(404).json({ error: 'Группа не найдена' });
+    await db.deleteGroup(id);
     res.json({ message: 'Группа удалена' });
   } catch (err) {
     next(err);
   }
 };
 
-// PUT /api/groups/:groupId/listeners/:listenerId - Обновить финансовые данные слушателя в группе
 exports.updateGroupListener = async (req, res, next) => {
   try {
     const { groupId, listenerId } = req.params;
     const updates = req.body;
-
-    // Преобразование пустых строк в null
-    if (updates.contract_amount === '') updates.contract_amount = null;
-    if (updates.paid_amount === '') updates.paid_amount = null;
-    if (updates.payment_type === '') updates.payment_type = null;
-    if (updates.comment === '') updates.comment = null;
-
-    const success = await db.updateGroupListener(
-      parseInt(groupId, 10),
-      parseInt(listenerId, 10),
-      updates
-    );
-
-    if (!success) {
-      return res.status(404).json({ error: 'Слушатель не найден в группе' });
-    }
-
+    ['contract_amount', 'paid_amount', 'payment_type', 'comment'].forEach((field) => {
+      if (updates[field] === '') updates[field] = null;
+    });
+    const success = await db.updateGroupListener(parseInt(groupId, 10), parseInt(listenerId, 10), updates);
+    if (!success) return res.status(404).json({ error: 'Слушатель не найден в группе' });
     res.json({ message: 'Финансовые данные обновлены' });
   } catch (err) {
     next(err);
   }
+};
+
+module.exports = {
+  getGroups: exports.getGroups,
+  exportGroups: exports.exportGroups,
+  getGroup: exports.getGroup,
+  createGroup: exports.createGroup,
+  updateGroup: exports.updateGroup,
+  deleteGroup: exports.deleteGroup,
+  updateGroupListener: exports.updateGroupListener,
 };

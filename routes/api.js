@@ -423,6 +423,7 @@ router.delete('/organizations/:organizationId/notes/:id', noteCtrl.deleteNote);
 // ===== Группы =====
 const groupCtrl = require('../controllers/groupController');
 router.get('/groups', groupCtrl.getGroups);
+router.get('/groups/export', groupCtrl.exportGroups);
 router.get('/groups/:id', groupCtrl.getGroup);
 router.post('/groups', validate(groupSchema), groupCtrl.createGroup);
 router.put('/groups/:id', validate(updateGroupSchema), groupCtrl.updateGroup);

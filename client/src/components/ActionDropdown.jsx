@@ -72,55 +72,61 @@ const ActionDropdown = ({ onEdit, onPrint, onAddToGroup, onContract, onInvoice, 
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      <button
-        onClick={(e) => handleAction(e, onEdit)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 16px',
-          border: 'none',
-          background: 'none',
-          textAlign: 'left',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#1f2937',
-        }}
-      >
-        ✏️ Редактировать
-      </button>
-      <button
-        onClick={(e) => handleAction(e, onPrint)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 16px',
-          border: 'none',
-          background: 'none',
-          textAlign: 'left',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#1f2937',
-        }}
-      >
-        🖨 Печать
-      </button>
-      <button
-        onClick={(e) => handleAction(e, onAddToGroup)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 16px',
-          border: 'none',
-          background: 'none',
-          textAlign: 'left',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#1f2937',
-        }}
-      >
-        👥 Добавить в группу
-      </button>
-      {!hideContract && (
+      {onEdit && (
+        <button
+          onClick={(e) => handleAction(e, onEdit)}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '8px 16px',
+            border: 'none',
+            background: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#1f2937',
+          }}
+        >
+          ✏️ Редактировать
+        </button>
+      )}
+      {onPrint && (
+        <button
+          onClick={(e) => handleAction(e, onPrint)}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '8px 16px',
+            border: 'none',
+            background: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#1f2937',
+          }}
+        >
+          🖨 Печать
+        </button>
+      )}
+      {onAddToGroup && (
+        <button
+          onClick={(e) => handleAction(e, onAddToGroup)}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '8px 16px',
+            border: 'none',
+            background: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#1f2937',
+          }}
+        >
+          👥 Добавить в группу
+        </button>
+      )}
+      {!hideContract && onContract && (
         <button
           onClick={(e) => handleAction(e, onContract)}
           style={{
@@ -138,41 +144,45 @@ const ActionDropdown = ({ onEdit, onPrint, onAddToGroup, onContract, onInvoice, 
           📄 Сформировать договор
         </button>
       )}
-      <button
-        onClick={(e) => handleAction(e, onInvoice)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 16px',
-          border: 'none',
-          background: 'none',
-          textAlign: 'left',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#1f2937',
-        }}
-      >
-        💳 Выставить счёт
-      </button>
+      {onInvoice && (
+        <button
+          onClick={(e) => handleAction(e, onInvoice)}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '8px 16px',
+            border: 'none',
+            background: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#1f2937',
+          }}
+        >
+          💳 Выставить счёт
+        </button>
+      )}
 
-      <hr style={{ margin: '4px 8px', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+      {onDelete && <hr style={{ margin: '4px 8px', border: 'none', borderTop: '1px solid #e5e7eb' }} />}
 
-      <button
-        onClick={(e) => handleAction(e, onDelete)}
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 16px',
-          border: 'none',
-          background: 'none',
-          textAlign: 'left',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: '#c0392b',
-        }}
-      >
-        🗑 Удалить
-      </button>
+      {onDelete && (
+        <button
+          onClick={(e) => handleAction(e, onDelete)}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '8px 16px',
+            border: 'none',
+            background: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#c0392b',
+          }}
+        >
+          🗑 Удалить
+        </button>
+      )}
     </div>,
     document.body
   ) : null;

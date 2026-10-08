@@ -1221,10 +1221,8 @@ async function deleteOrganizationNote(id, organizationId) {
 
 // ===== GROUPS =====
 
-async function getGroups(filters = {}) {
-  const { page = 1, limit = 20, search, manager_id, status, hours_min, hours_max } = filters;
-  const offset = (page - 1) * limit;
-
+function buildGroupsFilter(filters = {}) {
+  const { search, manager_id, status, format, hours_min, hours_max } = filters;
   const whereClauses = [];
   const values = [];
   let paramIndex = 1;
@@ -1234,59 +1232,72 @@ async function getGroups(filters = {}) {
     values.push(`%${search}%`);
     paramIndex++;
   }
-
   if (manager_id) {
     whereClauses.push(`g.manager_id = $${paramIndex}`);
     values.push(manager_id);
     paramIndex++;
   }
-
   if (status) {
     whereClauses.push(`g.status = $${paramIndex}`);
     values.push(status);
     paramIndex++;
   }
-
-  if (hours_min) {
+  if (format) {
+    whereClauses.push(`g.format = $${paramIndex}`);
+    values.push(format);
+    paramIndex++;
+  }
+  if (hours_min !== undefined && hours_min !== '') {
     whereClauses.push(`g.hours >= $${paramIndex}`);
     values.push(parseInt(hours_min, 10));
     paramIndex++;
   }
-
-  if (hours_max) {
+  if (hours_max !== undefined && hours_max !== '') {
     whereClauses.push(`g.hours <= $${paramIndex}`);
     values.push(parseInt(hours_max, 10));
     paramIndex++;
   }
 
-  const whereClause = whereClauses.length ? 'WHERE ' + whereClauses.join(' AND ') : '';
+  return {
+    whereClause: whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '',
+    values,
+    nextParamIndex: paramIndex,
+  };
+}
 
-  // Count total
-  const countRes = await query(
-    `SELECT COUNT(*) as count FROM groups g ${whereClause}`,
-    values
-  );
+const GROUPS_SELECT = `
+  SELECT g.*,
+    u.name as manager_name,
+    (SELECT COUNT(*) FROM group_listeners gl WHERE gl.group_id = g.id) as listeners_count
+  FROM groups g
+  LEFT JOIN users u ON g.manager_id = u.id
+`;
+
+async function getGroups(filters = {}) {
+  const { page = 1, limit = 20 } = filters;
+  const offset = (page - 1) * limit;
+  const { whereClause, values, nextParamIndex } = buildGroupsFilter(filters);
+
+  const countRes = await query(`SELECT COUNT(*) as count FROM groups g ${whereClause}`, values);
   const total = parseInt(countRes.rows[0]?.count || 0, 10);
-
-  // Get data with manager name and listeners count
   const dataRes = await query(
-    `SELECT g.*,
-     u.name as manager_name,
-     (SELECT COUNT(*) FROM group_listeners gl WHERE gl.group_id = g.id) as listeners_count
-     FROM groups g
-     LEFT JOIN users u ON g.manager_id = u.id
+    `${GROUPS_SELECT}
      ${whereClause}
      ORDER BY g.created_at DESC
-     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+     LIMIT $${nextParamIndex} OFFSET $${nextParamIndex + 1}`,
     [...values, limit, offset]
   );
 
-  return {
-    data: dataRes.rows,
-    total,
-    page: parseInt(page, 10),
-    limit: parseInt(limit, 10)
-  };
+  return { data: dataRes.rows, total, page: parseInt(page, 10), limit: parseInt(limit, 10) };
+}
+
+async function getGroupsForExport(filters = {}) {
+  const { whereClause, values } = buildGroupsFilter(filters);
+  const res = await query(
+    `${GROUPS_SELECT} ${whereClause} ORDER BY g.created_at DESC`,
+    values
+  );
+  return res.rows;
 }
 
 async function getGroupById(id) {
@@ -2215,6 +2226,7 @@ module.exports = {
 
   // Groups
   getGroups,
+  getGroupsForExport,
   getGroupById,
   createGroup,
   updateGroup,

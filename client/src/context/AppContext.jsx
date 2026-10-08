@@ -311,6 +311,7 @@ export const AppProvider = ({ children }) => {
       if (filters.status) params.status = filters.status;
       if (filters.hours_min) params.hours_min = filters.hours_min;
       if (filters.hours_max) params.hours_max = filters.hours_max;
+      if (filters.format) params.format = filters.format;
       const res = await fetchGroups(params);
       setGroups(res.data || []);
       setGroupsPagination({ page: res.page, limit: res.limit, total: res.total });
