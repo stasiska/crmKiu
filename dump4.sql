@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict J5ZnDObEcFKt26iZy2Piy6oabpdgFK7yrT68H2eDcPmF1gIIWnOUrFbC6dCL4Vv
+\restrict MyQIK2uJRqFoWi7pAAyYhLi6Uc7lqIyewEbLfipO6hdUcruXrz4NebWOd6jAT0I
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -554,6 +554,45 @@ ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
 
 
 --
+-- Name: recipient_import_drafts; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.recipient_import_drafts (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    file_name character varying(255),
+    mailing_template_id integer,
+    rows jsonb NOT NULL,
+    conflicts jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.recipient_import_drafts OWNER TO postgres;
+
+--
+-- Name: recipient_import_drafts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.recipient_import_drafts_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.recipient_import_drafts_id_seq OWNER TO postgres;
+
+--
+-- Name: recipient_import_drafts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.recipient_import_drafts_id_seq OWNED BY public.recipient_import_drafts.id;
+
+
+--
 -- Name: recipients; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -571,7 +610,8 @@ CREATE TABLE public.recipients (
     organization_phone character varying(50),
     inn character varying(12),
     organization_id integer,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone,
+    mailing_template_id integer
 );
 
 
@@ -923,6 +963,13 @@ ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: recipient_import_drafts id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.recipient_import_drafts ALTER COLUMN id SET DEFAULT nextval('public.recipient_import_drafts_id_seq'::regclass);
+
+
+--
 -- Name: recipients id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -987,6 +1034,37 @@ COPY public.branches (id, code, name, director_name, city, created_at) FROM stdi
 --
 
 COPY public.comments (id, recipient_id, user_id, comment, created_at) FROM stdin;
+56	200	1	Отправлено письмо от stas21kom12@gmail.com в 28.09.2026, 09:29 пользователем Администратор. Тема: "Курс по {specialization} для {name}"	2026-09-28 09:29:06.54
+57	200	1	Написать кому то	2026-09-28 09:33:07.455408
+58	200	1	Взять	2026-09-28 09:35:10.862256
+59	200	1	Запись отредактирована (stuska225@gmail.com):\nДолжность: «не указано» → «начальник»	2026-09-30 12:59:17.944553
+60	200	1	Запись изменена при импорте Excel (agalieva@ieml.ru):\nИНН: «не указано» → «1234567890»	2026-10-09 13:32:06.459536
+61	200	1	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nИНН: «не указано» → «1234567890»	2026-10-09 13:32:06.50124
+62	201	1	Отправлено письмо от stas21kom12@gmail.com в 28.09.2026, 09:29 пользователем Администратор. Тема: "Курс по {specialization} для {name}"	2026-09-28 09:29:06.54
+63	201	1	Написать кому то	2026-09-28 09:33:07.455408
+64	201	1	Взять	2026-09-28 09:35:10.862256
+65	201	1	Запись отредактирована (stuska225@gmail.com):\nДолжность: «не указано» → «начальник»	2026-09-30 12:59:17.944553
+66	201	1	Запись изменена при импорте Excel (agalieva@ieml.ru):\nИНН: «не указано» → «1234567890»	2026-10-09 13:32:06.459536
+67	201	1	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nИНН: «не указано» → «1234567890»	2026-10-09 13:32:06.50124
+68	202	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 13:58 пользователем Администратор. Тема: "Здравстуйте, СТАСИКОВИЧ!"	2026-10-13 13:58:02.545801
+69	202	1	Запись отредактирована (stuska225@gmail.com):\nНаименование направления: «не указано» → «Психология»	2026-10-13 13:59:10.725271
+70	202	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 13:59 пользователем Администратор. Тема: "Здравстуйте, СТАСИКОВИЧ!"	2026-10-13 13:59:21.160027
+71	202	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 13:59 пользователем Администратор. Тема: "Здравстуйте, СТАСИКОВИЧ!"	2026-10-13 13:59:46.685203
+72	200	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:00 пользователем Администратор. Тема: "Здравстуйте, Косынчук Станислав Александрович!"	2026-10-13 14:00:13.34675
+73	201	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:00 пользователем Администратор. Тема: "Здравстуйте, Косынчук Станислав Александрович!"	2026-10-13 14:00:13.34675
+74	200	1	Запись изменена при импорте Excel (agalieva@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nФИО руководителя: «Косынчук Станислав Александрович» → «Мухаметханова Неля Ильдусовна»\nНаименование направления: «Информационные технологии» → «Логопедия»\nТелефон организации: «не указано» → «89053177339»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	2026-10-13 14:09:29.659033
+75	201	1	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nНаименование направления: «Информационные технологии» → «Психология»\nТелефон организации: «не указано» → «89053177339»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	2026-10-13 14:09:29.666748
+76	200	1	Запись изменена при импорте Excel (agalieva@ieml.ru):\nОрганизация: «ЧОУ ВО КИУ » → «ООО Станислав»\nАдрес организации: «г.Казань, ул.Московская, д.42» → «г.Казань, ул.Тукая, 21»\nФИО руководителя: «Мухаметханова Неля Ильдусовна» → «Косынчук Станислав Александрович»\nНаименование направления: «Логопедия» → «Информационные технологии»\nИНН: «1654020511» → «1234567890»\nВид рассылки: «Ручной ввод» → «Приветствие»	2026-10-13 14:12:37.054683
+77	201	1	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nОрганизация: «ЧОУ ВО КИУ » → «ООО Станислав»\nАдрес организации: «г.Казань, ул.Московская, д.42» → «г.Казань, ул.Тукая, 21»\nНаименование направления: «Психология» → «Информационные технологии»\nИНН: «1654020511» → «1234567890»\nВид рассылки: «Ручной ввод» → «Приветствие»	2026-10-13 14:12:37.085467
+78	201	1	Запись изменена при импорте Excel (agalieva@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nФИО руководителя: «Косынчук Станислав Александрович» → «Мухаметханова Неля Ильдусовна»\nНаименование направления: «Информационные технологии» → «Логопедия»\nТелефон организации: «не указано» → «89053177339»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	2026-10-13 14:09:29.659033
+79	201	1	Запись изменена при импорте Excel (agalieva@ieml.ru):\nОрганизация: «ЧОУ ВО КИУ » → «ООО Станислав»\nАдрес организации: «г.Казань, ул.Московская, д.42» → «г.Казань, ул.Тукая, 21»\nФИО руководителя: «Мухаметханова Неля Ильдусовна» → «Косынчук Станислав Александрович»\nНаименование направления: «Логопедия» → «Информационные технологии»\nИНН: «1654020511» → «1234567890»\nВид рассылки: «Ручной ввод» → «Приветствие»	2026-10-13 14:12:37.054683
+80	200	1	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nНаименование направления: «Информационные технологии» → «Психология»\nТелефон организации: «не указано» → «89053177339»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	2026-10-13 14:09:29.666748
+81	200	1	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nОрганизация: «ЧОУ ВО КИУ » → «ООО Станислав»\nАдрес организации: «г.Казань, ул.Московская, д.42» → «г.Казань, ул.Тукая, 21»\nНаименование направления: «Психология» → «Информационные технологии»\nИНН: «1654020511» → «1234567890»\nВид рассылки: «Ручной ввод» → «Приветствие»	2026-10-13 14:12:37.085467
+82	200	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:15 пользователем Администратор. Тема: "Здравстуйте, Косынчук Станислав Александрович!"	2026-10-13 14:15:41.011892
+83	201	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:15 пользователем Администратор. Тема: "Здравстуйте, Косынчук Станислав Александрович!"	2026-10-13 14:15:41.011892
+84	200	1	Запись изменена при импорте Excel (agalieva@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nФИО руководителя: «Косынчук Станислав Александрович» → «Мухаметханова Неля Ильдусовна»\nНаименование направления: «Информационные технологии» → «Логопедия»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	2026-10-13 14:17:28.085057
+85	201	1	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nНаименование направления: «Информационные технологии» → «Психология»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	2026-10-13 14:17:28.098544
+86	200	1	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:17 пользователем Администратор. Тема: "Здравстуйте, Мухаметханова Неля Ильдусовна!"	2026-10-13 14:17:43.746624
 \.
 
 
@@ -1102,6 +1180,14 @@ COPY public.organization_notes (id, organization_id, type, date, note, executor_
 9	5	note	2026-09-28 11:27:38.163	Отправить рассылку завтра	\N	1	\N	2026-09-28 11:27:38.163
 10	5	note	2026-09-29 00:00:00	заметка	32	1	\N	2026-09-28 11:28:51.517861
 11	4	note	2026-09-30 12:59:17.944553	Запись отредактирована (stuska225@gmail.com):\nДолжность: «не указано» → «начальник»	\N	1	\N	2026-09-30 12:59:17.944553
+14	4	note	2026-10-09 13:32:06.459536	Запись изменена при импорте Excel (agalieva@ieml.ru):\nИНН: «не указано» → «1234567890»	\N	1	\N	2026-10-09 13:32:06.459536
+15	4	note	2026-10-09 13:32:06.50124	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nИНН: «не указано» → «1234567890»	\N	1	\N	2026-10-09 13:32:06.50124
+16	4	note	2026-10-13 14:00:13.34675	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:00 пользователем Администратор. Тема: "Здравстуйте, Косынчук Станислав Александрович!"	\N	1	\N	2026-10-13 14:00:13.34675
+17	4	note	2026-10-13 14:09:29.659033	Запись изменена при импорте Excel (agalieva@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nФИО руководителя: «Косынчук Станислав Александрович» → «Мухаметханова Неля Ильдусовна»\nНаименование направления: «Информационные технологии» → «Логопедия»\nТелефон организации: «не указано» → «89053177339»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	\N	1	\N	2026-10-13 14:09:29.659033
+18	4	note	2026-10-13 14:12:37.054683	Запись изменена при импорте Excel (agalieva@ieml.ru):\nОрганизация: «ЧОУ ВО КИУ » → «ООО Станислав»\nАдрес организации: «г.Казань, ул.Московская, д.42» → «г.Казань, ул.Тукая, 21»\nФИО руководителя: «Мухаметханова Неля Ильдусовна» → «Косынчук Станислав Александрович»\nНаименование направления: «Логопедия» → «Информационные технологии»\nИНН: «1654020511» → «1234567890»\nВид рассылки: «Ручной ввод» → «Приветствие»	\N	1	\N	2026-10-13 14:12:37.054683
+19	4	note	2026-10-13 14:09:29.666748	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nОрганизация: «ООО Станислав» → «ЧОУ ВО КИУ »\nАдрес организации: «г.Казань, ул.Тукая, 21» → «г.Казань, ул.Московская, д.42»\nНаименование направления: «Информационные технологии» → «Психология»\nТелефон организации: «не указано» → «89053177339»\nИНН: «1234567890» → «1654020511»\nВид рассылки: «Приветствие» → «Ручной ввод»	\N	1	\N	2026-10-13 14:09:29.666748
+20	4	note	2026-10-13 14:12:37.085467	Запись изменена при импорте Excel (kolbasovadd@ieml.ru):\nОрганизация: «ЧОУ ВО КИУ » → «ООО Станислав»\nАдрес организации: «г.Казань, ул.Московская, д.42» → «г.Казань, ул.Тукая, 21»\nНаименование направления: «Психология» → «Информационные технологии»\nИНН: «1654020511» → «1234567890»\nВид рассылки: «Ручной ввод» → «Приветствие»	\N	1	\N	2026-10-13 14:12:37.085467
+21	4	note	2026-10-13 14:15:41.011892	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:15 пользователем Администратор. Тема: "Здравстуйте, Косынчук Станислав Александрович!"	\N	1	\N	2026-10-13 14:15:41.011892
 \.
 
 
@@ -1117,10 +1203,21 @@ COPY public.organizations (id, name, address, email, phone, contact_person, mana
 
 
 --
+-- Data for Name: recipient_import_drafts; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.recipient_import_drafts (id, user_id, file_name, mailing_template_id, rows, conflicts, created_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: recipients; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.recipients (id, email, organization, comment, extra, imported_at, organization_address, "position", manager_name, direction, organization_phone, inn, organization_id, updated_at) FROM stdin;
+COPY public.recipients (id, email, organization, comment, extra, imported_at, organization_address, "position", manager_name, direction, organization_phone, inn, organization_id, updated_at, mailing_template_id) FROM stdin;
+200	agalieva@ieml.ru	ЧОУ ВО КИУ 	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 14:17 пользователем Администратор. Тема: "Здравстуйте, Мухаметханова Неля Ильдусовна!"	{"email": "agalieva@ieml.ru", "должность": "Директор", "организация": "ООО Станислав", "инн организации": 1234567890, "фио руководителя": "Косынчук Станислав Александрович", "адрес организации": "г.Казань, ул.Тукая, 21", "телефон организации": "", "наименование направления": "Информационные технологии"}	2026-10-13 14:17:28.088723	г.Казань, ул.Московская, д.42	Директор	Мухаметханова Неля Ильдусовна	Логопедия	89053177339	1654020511	\N	2026-10-13 14:17:28.088745	\N
+202	stuska225@gmail.com	ООО СТАСИСКА	Отправлено письмо от stas21kom12@gmail.com в 13.10.2026, 13:59 пользователем Администратор. Тема: "Здравстуйте, СТАСИКОВИЧ!"	\N	2026-10-13 13:57:49.34521			СТАСИКОВИЧ	Психология			\N	2026-10-13 13:59:10.729725	2
+201	kolbasovadd@ieml.ru	ЧОУ ВО КИУ 		{"email": "kolbasovadd@ieml.ru", "должность": "Директор", "организация": "ООО Станислав", "инн организации": 1234567890, "фио руководителя": "", "адрес организации": "г.Казань, ул.Тукая, 21", "телефон организации": "", "наименование направления": "Информационные технологии"}	2026-10-13 14:17:28.099304	г.Казань, ул.Московская, д.42	Директор		Психология	89053177339	1654020511	\N	2026-10-13 14:17:28.099306	\N
 \.
 
 
@@ -1137,6 +1234,12 @@ COPY public.reminders (id, recipient_id, recipient_email, reminder_date, message
 --
 
 COPY public.send_logs (id, recipient_email, sender_id, subject, body_preview, status, error_message, sent_at) FROM stdin;
+73	stuska225@gmail.com	1	Здравстуйте, СТАСИКОВИЧ!	<!DOCTYPE html>\r\n<html lang="ru">\r\n<head>\r\n  <meta charset="UTF-8">\r\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n  <style>\r\n    body {\r\n      font-family: Arial, sans-ser	sent	\N	2026-10-13 13:58:02.455016
+74	stuska225@gmail.com	1	Здравстуйте, СТАСИКОВИЧ!	<!DOCTYPE html>\r\n<html lang="ru">\r\n<head>\r\n  <meta charset="UTF-8">\r\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n  <style>\r\n    body {\r\n      font-family: Arial, sans-ser	sent	\N	2026-10-13 13:59:21.152134
+75	stuska225@gmail.com	1	Здравстуйте, СТАСИКОВИЧ!	<!DOCTYPE html>\r\n<html lang="ru">\r\n<head>\r\n  <meta charset="UTF-8">\r\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n  <style>\r\n    body {\r\n      font-family: Arial, sans-ser	sent	\N	2026-10-13 13:59:46.676791
+76	agalieva@ieml.ru	1	Здравстуйте, Косынчук Станислав Александрович!	<!DOCTYPE html>\r\n<html lang="ru">\r\n<head>\r\n  <meta charset="UTF-8">\r\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n  <style>\r\n    body {\r\n      font-family: Arial, sans-ser	sent	\N	2026-10-13 14:00:13.342421
+77	agalieva@ieml.ru	1	Здравстуйте, Косынчук Станислав Александрович!	<!DOCTYPE html>\r\n<html lang="ru">\r\n<head>\r\n  <meta charset="UTF-8">\r\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n  <style>\r\n    body {\r\n      font-family: Arial, sans-ser	sent	\N	2026-10-13 14:15:40.965819
+78	agalieva@ieml.ru	1	Здравстуйте, Мухаметханова Неля Ильдусовна!	<!DOCTYPE html>\r\n<html lang="ru">\r\n<head>\r\n  <meta charset="UTF-8">\r\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n  <style>\r\n    body {\r\n      font-family: Arial, sans-ser	sent	\N	2026-10-13 14:17:43.736824
 \.
 
 
@@ -1173,9 +1276,9 @@ COPY public.tasks (id, title, description, status, assigned_to, deadline, user_i
 --
 
 COPY public.templates (id, name, subject, body, created_at, attachments) FROM stdin;
-2	Основной шаблон	Курс по {specialization} для {name}	<!DOCTYPE html>\\n<html>\\n<head>\\n  <meta charset=\\"UTF-8\\">\\n  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\">\\n  <style>\\n    body { font-family: Arial, sans-serif; background-color: #f4f7fa; margin: 0; padding: 20px; }\\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 30px; }\\n    .header { text-align: center; border-bottom: 2px solid #4a90d9; padding-bottom: 20px; }\\n    .header h1 { color: #2c3e50; font-size: 24px; margin: 0; }\\n    .content { padding: 20px 0; line-height: 1.6; color: #333; }\\n    .content p { margin: 15px 0; }\\n    .cta-button { display: inline-block; background: #4a90d9; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }\\n    .footer { text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }\\n  </style>\\n</head>\\n<body> \\n  <div class=\\"container\\">\\n    <div class=\\"header\\">\\n      <h1>🎓 Образовательный центр</h1>\\n    </div>\\n    <div class=\\"content\\">\\n      <p><strong>Здравствуйте, {name}!</strong></p>\\n      <p>Мы знаем, что вы интересуетесь направлением <strong>«{specialization}»</strong> и живёте в городе <strong>{city}</strong>.</p>\\n      <p>Именно для таких специалистов, как вы, мы запустили новый курс <strong>«Мастерство в {specialization}»</strong> – практическое обучение с реальными кейсами и поддержкой наставников.</p>\\n      <p><strong>Что вас ждёт:</strong></p>\\n      <ul>\\n        <li>✅ 10 модулей с видеоуроками и домашними заданиями</li>\\n        <li>✅ Живые вебинары с экспертами</li>\\n        <li>✅ Чат с кураторами и участниками</li>\\n        <li>✅ Сертификат по окончании</li>\\n      </ul>\\n      <p style=\\"text-align: center;\\">\\n        <a href=\\"https://your-course-link.com\\" class=\\"cta-button\\">Узнать подробнее и записаться</a>\\n      </p>\\n      <p>До 31 августа действует скидка 20% по промокоду <strong>CRM2026</strong>.</p>\\n      <p>Если у вас есть вопросы – просто ответьте на это письмо, мы всегда на связи.</p>\\n      <p>С уважением,<br>Команда Образовательного центра</p>\\n    </div>\\n    <div class=\\"footer\\">\\n      <p>Вы получили это письмо, потому что подписаны на наши обновления. <a href=\\"#\\">Отписаться</a></p>\\n      <p>© 2026 Образовательный центр. Все права защищены.</p>\\n    </div>\\n  </div>\\n</body>\\n</html>	2026-08-24 13:20:40.549192	\N
 3	Приветствие22	Курс по {specialization} для {name}	<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <style>\n    body { font-family: Arial, sans-serif; background-color: #f4f7fa; margin: 0; padding: 20px; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 30px; }\n    .header { text-align: center; border-bottom: 2px solid #4a90d9; padding-bottom: 20px; }\n    .header h1 { color: #2c3e50; font-size: 24px; margin: 0; }\n    .content { padding: 20px 0; line-height: 1.6; color: #333; }\n    .content p { margin: 15px 0; }\n    .cta-button { display: inline-block; background: #4a90d9; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }\n    .footer { text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <div class="header">\n      <h1>🎓 Образовательный центр</h1>\n    </div>\n    <div class="content">\n      <p><strong>Здравствуйте, {name}!</strong></p>\n      <p>Мы знаем, что вы интересуетесь направлением <strong>«{specialization}»</strong> и живёте в городе <strong>{city}</strong>.</p>\n      <p>Именно для таких специалистов, как вы, мы запустили новый курс <strong>«Мастерство в {specialization}»</strong> – практическое обучение с реальными кейсами и поддержкой наставников.</p>\n      <p><strong>Что вас ждёт:</strong></p>\n      <ul>\n        <li>✅ 10 модулей с видеоуроками и домашними заданиями</li>\n        <li>✅ Живые вебинары с экспертами</li>\n        <li>✅ Чат с кураторами и участниками</li>\n        <li>✅ Сертификат по окончании</li>\n      </ul>\n      <p style="text-align: center;">\n        <a href="https://your-course-link.com" class="cta-button">Узнать подробнее и записаться</a>\n      </p>\n      <p>До 31 августа действует скидка 20% по промокоду <strong>CRM2026</strong>.</p>\n      <p>Если у вас есть вопросы – просто ответьте на это письмо, мы всегда на связи.</p>\n      <p>С уважением,<br>Команда Образовательного центра</p>\n    </div>\n    <div class="footer">\n      <p>Вы получили это письмо, потому что подписаны на наши обновления. <a href="#">Отписаться</a></p>\n      <p>© 2026 Образовательный центр. Все права защищены.</p>\n    </div>\n  </div>\n</body>\n</html>	2026-08-24 15:35:06.709121	\N
 1	Приветствие	Привет, {manager_name}!	<h1>Здравствуйте, {manager_name}!</h1><p>Рады видеть вас на нашем курсе возможно.</p>	2026-08-24 13:20:15.689138	\N
+2	Основной шаблон	Здравстуйте, {manager_name}!	<!DOCTYPE html>\n<html lang="ru">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      background-color: #f4f7fa;\n      margin: 0;\n      padding: 20px;\n    }\n    .container {\n      max-width: 600px;\n      margin: 0 auto;\n      background: #ffffff;\n      border-radius: 8px;\n      padding: 30px;\n    }\n    .header {\n      text-align: center;\n      border-bottom: 2px solid #4a90d9;\n      padding-bottom: 20px;\n    }\n    .header h1 {\n      color: #2c3e50;\n      font-size: 24px;\n      margin: 0;\n    }\n    .content {\n      padding: 20px 0;\n      line-height: 1.6;\n      color: #333333;\n    }\n    .content p {\n      margin: 15px 0;\n    }\n    .cta-button {\n      display: inline-block;\n      background: #4a90d9;\n      color: #ffffff;\n      padding: 12px 30px;\n      text-decoration: none;\n      border-radius: 5px;\n      font-weight: bold;\n      margin: 20px 0;\n    }\n    .footer {\n      text-align: center;\n      font-size: 12px;\n      color: #888888;\n      border-top: 1px solid #eeeeee;\n      padding-top: 20px;\n    }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <div class="header">\n      <h1>🎓 Образовательный центр</h1>\n    </div>\n\n    <div class="content">\n      <p>\n        <strong>Предложение для организации «{organization}»</strong><br>\n        Вниманию: {manager_name}\n      </p>\n\n      <p>Здравствуйте!</p>\n\n      <p>\n        Приглашаем сотрудников вашей организации на обучение\n        по направлению <strong>«{direction}»</strong>.\n      </p>\n\n      <p>\n        Наш курс <strong>«Мастерство в {direction}»</strong> —\n        практическое обучение с реальными кейсами\n        и поддержкой наставников.\n      </p>\n\n      <p><strong>Что вас ждёт:</strong></p>\n      <ul>\n        <li>✅ 10 модулей с видеоуроками и домашними заданиями</li>\n        <li>✅ Живые вебинары с экспертами</li>\n        <li>✅ Чат с кураторами и участниками</li>\n        <li>✅ Сертификат по окончании</li>\n      </ul>\n\n      <p style="text-align: center;">\n        <a href="https://your-course-link.com" class="cta-button">\n          Узнать подробнее и записаться\n        </a>\n      </p>\n\n      <p>\n        Если вы хотите организовать обучение для группы сотрудников,\n        ответьте на это письмо. Мы поможем подобрать программу\n        и обсудить условия участия.\n      </p>\n\n      <p>\n        С уважением,<br>\n        Команда Образовательного центра\n      </p>\n    </div>\n\n    <div class="footer">\n      <p>\n        Если вы не хотите получать наши предложения,\n        ответьте на это письмо со словом «Отписаться».\n      </p>\n      <p>© 2026 Образовательный центр. Все права защищены.</p>\n    </div>\n  </div>\n</body>\n</html>\n	2026-08-24 13:20:40.549192	\N
 \.
 
 
@@ -1203,14 +1306,14 @@ COPY public.users (id, email, password_hash, name, role, created_at, branch) FRO
 -- Name: branches_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.branches_id_seq', 234, true);
+SELECT pg_catalog.setval('public.branches_id_seq', 261, true);
 
 
 --
 -- Name: comments_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.comments_id_seq', 21, true);
+SELECT pg_catalog.setval('public.comments_id_seq', 86, true);
 
 
 --
@@ -1273,7 +1376,7 @@ SELECT pg_catalog.setval('public.notifications_id_seq', 9, true);
 -- Name: organization_notes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.organization_notes_id_seq', 13, true);
+SELECT pg_catalog.setval('public.organization_notes_id_seq', 21, true);
 
 
 --
@@ -1284,10 +1387,17 @@ SELECT pg_catalog.setval('public.organizations_id_seq', 7, true);
 
 
 --
+-- Name: recipient_import_drafts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.recipient_import_drafts_id_seq', 9, true);
+
+
+--
 -- Name: recipients_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.recipients_id_seq', 189, true);
+SELECT pg_catalog.setval('public.recipients_id_seq', 202, true);
 
 
 --
@@ -1301,7 +1411,7 @@ SELECT pg_catalog.setval('public.reminders_id_seq', 16, true);
 -- Name: send_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.send_logs_id_seq', 65, true);
+SELECT pg_catalog.setval('public.send_logs_id_seq', 78, true);
 
 
 --
@@ -1329,7 +1439,7 @@ SELECT pg_catalog.setval('public.templates_id_seq', 3, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 161, true);
+SELECT pg_catalog.setval('public.users_id_seq', 170, true);
 
 
 --
@@ -1458,6 +1568,14 @@ ALTER TABLE ONLY public.organization_notes
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: recipient_import_drafts recipient_import_drafts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.recipient_import_drafts
+    ADD CONSTRAINT recipient_import_drafts_pkey PRIMARY KEY (id);
 
 
 --
@@ -1663,6 +1781,13 @@ CREATE INDEX idx_organization_notes_org_id ON public.organization_notes USING bt
 --
 
 CREATE INDEX idx_organizations_name ON public.organizations USING btree (name);
+
+
+--
+-- Name: idx_recipient_import_drafts_created_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_recipient_import_drafts_created_at ON public.recipient_import_drafts USING btree (created_at);
 
 
 --
@@ -1876,6 +2001,30 @@ ALTER TABLE ONLY public.organizations
 
 
 --
+-- Name: recipient_import_drafts recipient_import_drafts_mailing_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.recipient_import_drafts
+    ADD CONSTRAINT recipient_import_drafts_mailing_template_id_fkey FOREIGN KEY (mailing_template_id) REFERENCES public.templates(id) ON DELETE SET NULL;
+
+
+--
+-- Name: recipient_import_drafts recipient_import_drafts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.recipient_import_drafts
+    ADD CONSTRAINT recipient_import_drafts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: recipients recipients_mailing_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.recipients
+    ADD CONSTRAINT recipients_mailing_template_id_fkey FOREIGN KEY (mailing_template_id) REFERENCES public.templates(id) ON DELETE SET NULL;
+
+
+--
 -- Name: recipients recipients_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1935,5 +2084,5 @@ ALTER TABLE ONLY public.tasks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict J5ZnDObEcFKt26iZy2Piy6oabpdgFK7yrT68H2eDcPmF1gIIWnOUrFbC6dCL4Vv
+\unrestrict MyQIK2uJRqFoWi7pAAyYhLi6Uc7lqIyewEbLfipO6hdUcruXrz4NebWOd6jAT0I
 
