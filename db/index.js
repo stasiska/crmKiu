@@ -444,8 +444,12 @@ async function addRecipients(rows, userId, options = {}) {
       if (exists.rows.length > 0) {
         recipient = exists.rows[0];
         const updates = {};
-        if (managerName) updates.manager_name = managerName;
+        if (organization) updates.organization = organization;
+        if (organizationAddress) updates.organization_address = organizationAddress;
         if (position) updates.position = position;
+        if (managerName) updates.manager_name = managerName;
+        if (direction) updates.direction = direction;
+        if (organizationPhone) updates.organization_phone = organizationPhone;
         if (inn) updates.inn = inn;
         if (mailingTemplateId !== undefined && (sameMailingTemplate(recipient.mailing_template_id, mailingTemplateId) || replaceEmails.has(normalizedEmail))) {
           updates.mailing_template_id = mailingTemplateId;
