@@ -5,17 +5,6 @@ async function runMigrations(pool) {
     try {
         await client.query('BEGIN');
 
-        await client.query(`
-  CREATE TABLE IF NOT EXISTS notifications (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    type VARCHAR(50) NOT NULL,
-    message TEXT NOT NULL,
-    link VARCHAR(255),
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
-`);
         // Таблица users
         await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -24,6 +13,18 @@ async function runMigrations(pool) {
         password_hash VARCHAR(255) NOT NULL,
         name VARCHAR(100),
         role VARCHAR(50) DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        link VARCHAR(255),
+        is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -85,7 +86,20 @@ async function runMigrations(pool) {
       )
     `);
 
-        // Таблица reminders
+        // Таблица черновиков импорта получателей
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS recipient_import_drafts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        file_name VARCHAR(255),
+        mailing_template_id INTEGER REFERENCES templates(id) ON DELETE SET NULL,
+        rows JSONB NOT NULL,
+        conflicts JSONB NOT NULL DEFAULT '[]'::jsonb,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_recipient_import_drafts_created_at ON recipient_import_drafts(created_at)`);
         await client.query(`
       CREATE TABLE IF NOT EXISTS reminders (
         id SERIAL PRIMARY KEY,
@@ -478,6 +492,12 @@ async function runMigrations(pool) {
         END IF;
       END $$;
     `);
+
+        // Добавляем связь получателя с видом рассылки
+        await client.query(`
+          ALTER TABLE recipients
+          ADD COLUMN IF NOT EXISTS mailing_template_id INTEGER REFERENCES templates(id) ON DELETE SET NULL
+        `);
 
         // Добавляем новые поля реквизитов юридических лиц
         await client.query(`

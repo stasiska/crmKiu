@@ -29,16 +29,21 @@ export const fetchRecipients = (filters = {}) => {
   if (filters.specialization) params.append('specialization', filters.specialization);
   if (filters.organization) params.append('organization', filters.organization);
   if (filters.search) params.append('search', filters.search);
+  if (filters.mailing_template_id) params.append('mailing_template_id', filters.mailing_template_id);
   const url = `/recipients?${params.toString()}`;
   return api.get(url).then(r => r.data);
 };
-export const importRecipients = (file) => {
+export const previewRecipientImport = (file, templateId) => {
   const formData = new FormData();
   formData.append('file', file);
-  return api.post('/recipients/import', formData, {
+  formData.append('template_id', templateId || 'manual');
+  return api.post('/recipients/import/preview', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(r => r.data);
 };
+export const confirmRecipientImport = (draftId, decisions) =>
+  api.post('/recipients/import/confirm', { draft_id: draftId, decisions }).then(r => r.data);
+
 export const fetchFiltersOptions = () => api.get('/recipients/filters').then(r => r.data);
 export const fetchRecipientOrganizations = () => api.get('/recipients/organizations').then(r => r.data);
 export const updateRecipientComment = (id, comment) =>

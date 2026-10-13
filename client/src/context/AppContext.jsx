@@ -29,7 +29,7 @@ export const AppProvider = ({ children }) => {
   const [senders, setSenders] = useState([]);
   const [selectedSenderId, setSelectedSenderId] = useState(null);
   const [recipients, setRecipients] = useState([]);
-  const [filters, setFilters] = useState({ city: '', specialization: '', organization: '', search: '' });
+  const [filters, setFilters] = useState({ city: '', specialization: '', organization: '', search: '', mailing_template_id: '' });
   const [filtersOptions, setFiltersOptions] = useState({ cities: [], specializations: [] });
   const [recipientOrganizations, setRecipientOrganizations] = useState([]); // переименовано
   const [selectedRecipientIds, setSelectedRecipientIds] = useState([]);
@@ -62,6 +62,7 @@ export const AppProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
 
   const eventSourceRef = useRef(null);
+  const processedRecipientSelectionRef = useRef('');
 
   // ===== Загрузка отправителей =====
   const loadSenders = useCallback(async () => {
@@ -143,6 +144,55 @@ export const AppProvider = ({ children }) => {
       console.error('Ошибка загрузки шаблона:', e);
     }
   }, []);
+
+  useEffect(() => {
+    const mailingTemplateId = filters.mailing_template_id;
+    if (!mailingTemplateId) return;
+
+    if (mailingTemplateId === 'manual') {
+      setSelectedTemplateId('');
+    } else if (String(selectedTemplateId) !== String(mailingTemplateId)) {
+      setSelectedTemplateId(String(mailingTemplateId));
+      applyTemplate(mailingTemplateId);
+    }
+  }, [filters.mailing_template_id, applyTemplate]);
+
+  // ===== Автовыбор шаблона по выбранным получателям =====
+  useEffect(() => {
+    const selectedRecipients = recipients.filter((recipient) =>
+      selectedRecipientIds.includes(recipient.id)
+    );
+    const selectionKey = selectedRecipients
+      .map((recipient) => `${recipient.id}:${recipient.mailing_template_id ?? 'manual'}`)
+      .sort()
+      .join('|');
+
+    if (selectionKey === processedRecipientSelectionRef.current) return;
+    processedRecipientSelectionRef.current = selectionKey;
+
+    if (!selectedRecipients.length || selectedRecipients.length !== selectedRecipientIds.length) return;
+
+    const hasManualRecipient = selectedRecipients.some(
+      (recipient) => recipient.mailing_template_id === null || recipient.mailing_template_id === undefined
+    );
+    const templateIds = [...new Set(
+      selectedRecipients
+        .map((recipient) => recipient.mailing_template_id)
+        .filter((templateId) => templateId !== null && templateId !== undefined && templateId !== '')
+        .map(String)
+    )];
+
+    // Автоматически подставляем шаблон только после смены выбранных записей,
+    // если все они относятся к одному сохранённому виду рассылки.
+    if (!hasManualRecipient && templateIds.length === 1) {
+      setSelectedTemplateId(templateIds[0]);
+      applyTemplate(templateIds[0]);
+    } else {
+      // Не оставляем ранее выбранный шаблон при ручном или смешанном выборе,
+      // но не очищаем введённые оператором тему и текст.
+      setSelectedTemplateId('');
+    }
+  }, [selectedRecipientIds, recipients, applyTemplate]);
 
   // ===== SSE для прогресса =====
   const connectProgressSSE = useCallback(() => {

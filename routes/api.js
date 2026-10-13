@@ -139,6 +139,8 @@ router.use(authMiddleware);
 
 // ---- Получатели ----
 router.post('/recipients', authMiddleware, recipientCtrl.createRecipient);
+router.post('/recipients/import/preview', upload.single('file'), recipientCtrl.previewImportRecipients);
+router.post('/recipients/import/confirm', recipientCtrl.confirmImportRecipients);
 router.post('/recipients/import', upload.single('file'), recipientCtrl.importRecipients);
 router.get('/recipients', recipientCtrl.getRecipients);
 router.get('/recipients/filters', recipientCtrl.getFiltersOptions);

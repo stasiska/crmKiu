@@ -110,17 +110,61 @@ const RECIPIENT_FIELDS = {
   manager_name: 'ФИО руководителя',
   direction: 'Наименование направления',
   organization_phone: 'Телефон организации',
-  inn: 'ИНН'
+  inn: 'ИНН',
+  mailing_template_id: 'Вид рассылки'
 };
+
+function normalizeRecipientEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function getRecipientRowEmail(row) {
+  return row.email || row['e-mail'] || row['почта'];
+}
+
+function normalizeMailingTemplateId(templateId) {
+  if (templateId === null || templateId === undefined || templateId === '') return null;
+  const id = Number(templateId);
+  return Number.isInteger(id) ? id : templateId;
+}
+
+function sameMailingTemplate(templateIdA, templateIdB) {
+  return normalizeMailingTemplateId(templateIdA) === normalizeMailingTemplateId(templateIdB);
+}
+
+async function resolveMailingTemplateId(client, templateId) {
+  const normalizedTemplateId = normalizeMailingTemplateId(templateId);
+  if (normalizedTemplateId === null) return null;
+  if (!Number.isInteger(normalizedTemplateId) || normalizedTemplateId < 1) {
+    throw new Error('Некорректный вид рассылки');
+  }
+  const result = await client.query('SELECT id FROM templates WHERE id = $1', [normalizedTemplateId]);
+  if (!result.rows.length) throw new Error('Выбранный шаблон не найден');
+  return normalizedTemplateId;
+}
 
 function normalizeInn(inn) {
   return String(inn ?? '').replace(/\s/g, '');
 }
 
+async function getMailingTemplateName(client, templateId) {
+  if (normalizeMailingTemplateId(templateId) === null) return 'Ручной ввод';
+  const result = await client.query('SELECT name FROM templates WHERE id = $1', [templateId]);
+  return result.rows[0]?.name || 'Удалённый шаблон';
+}
+
 async function recordRecipientChanges(client, recipient, updates, userId, source) {
-  const changes = Object.entries(updates)
-    .filter(([key, value]) => RECIPIENT_FIELDS[key] && String(recipient[key] ?? '') !== String(value ?? ''))
-    .map(([key, value]) => `${RECIPIENT_FIELDS[key]}: «${recipient[key] || 'не указано'}» → «${value || 'не указано'}»`);
+  const changes = [];
+  for (const [key, value] of Object.entries(updates)) {
+    if (!RECIPIENT_FIELDS[key] || String(recipient[key] ?? '') === String(value ?? '')) continue;
+    const [oldValue, newValue] = key === 'mailing_template_id'
+      ? await Promise.all([
+        getMailingTemplateName(client, recipient[key]),
+        getMailingTemplateName(client, value),
+      ])
+      : [recipient[key] || 'не указано', value || 'не указано'];
+    changes.push(`${RECIPIENT_FIELDS[key]}: «${oldValue}» → «${newValue}»`);
+  }
   if (changes.length === 0) return false;
 
   await client.query(
@@ -235,36 +279,156 @@ async function ensureRecipientOrganization(recipientId, userId) {
 }
 
 async function getRecipients(filters = {}) {
-  let sql = 'SELECT * FROM recipients WHERE 1=1';
+  let sql = `SELECT r.*, t.name AS mailing_template_name
+    FROM recipients r
+    LEFT JOIN templates t ON t.id = r.mailing_template_id
+    WHERE 1=1`;
   const values = [];
   let idx = 1;
   if (filters.organization) {
-    sql += ` AND organization = $${idx}`;
+    sql += ` AND r.organization = $${idx}`;
     values.push(filters.organization);
     idx++;
   }
+  if (filters.mailing_template_id === 'manual') {
+    sql += ' AND r.mailing_template_id IS NULL';
+  } else if (filters.mailing_template_id) {
+    sql += ` AND r.mailing_template_id = $${idx}`;
+    values.push(parseInt(filters.mailing_template_id, 10));
+    idx++;
+  }
   if (filters.search) {
-    sql += ` AND (email ILIKE $${idx}
-      OR organization ILIKE $${idx}
-      OR position ILIKE $${idx}
-      OR manager_name ILIKE $${idx}
-      OR direction ILIKE $${idx})`;
+    sql += ` AND (r.email ILIKE $${idx}
+      OR r.organization ILIKE $${idx}
+      OR r.position ILIKE $${idx}
+      OR r.manager_name ILIKE $${idx}
+      OR r.direction ILIKE $${idx})`;
     values.push(`%${filters.search}%`);
     idx++;
   }
-  sql += ' ORDER BY GREATEST(updated_at, imported_at) DESC NULLS LAST, id DESC';
+  sql += ' ORDER BY GREATEST(r.updated_at, r.imported_at) DESC NULLS LAST, r.id DESC';
   const res = await query(sql, values);
   return res.rows;
 }
 
-async function addRecipients(rows, userId) {
+async function getMailingTemplate(templateId) {
+  if (templateId === null || templateId === undefined) return null;
+  const res = await query('SELECT id, name FROM templates WHERE id = $1', [templateId]);
+  return res.rows[0] || null;
+}
+
+async function createRecipientImportDraft(rows, userId, fileName, mailingTemplateId) {
+  await query(`DELETE FROM recipient_import_drafts WHERE created_at < clock_timestamp() - INTERVAL '24 hours'`);
+  const rowsByEmail = new Map();
+  const rowsWithoutEmail = [];
+  for (const row of rows) {
+    const email = normalizeRecipientEmail(getRecipientRowEmail(row));
+    if (email) rowsByEmail.set(email, row);
+    else rowsWithoutEmail.push(row);
+  }
+  // При повторе email в одном файле остаётся последняя заполненная строка.
+  const uniqueRows = [...rowsByEmail.values(), ...rowsWithoutEmail];
+  const emails = [...rowsByEmail.keys()];
+  const existing = emails.length ? await query(
+    `SELECT r.id, r.email, r.mailing_template_id, t.name AS mailing_template_name
+     FROM recipients r
+     LEFT JOIN templates t ON t.id = r.mailing_template_id
+     WHERE LOWER(TRIM(r.email)) = ANY($1::text[])`,
+    [emails]
+  ) : { rows: [] };
+  const existingByEmail = new Map(existing.rows.map((recipient) => [normalizeRecipientEmail(recipient.email), recipient]));
+  const conflicts = [];
+  const seenConflictEmails = new Set();
+
+  for (const row of uniqueRows) {
+    const email = normalizeRecipientEmail(getRecipientRowEmail(row));
+    const recipient = existingByEmail.get(email);
+    if (recipient && !sameMailingTemplate(recipient.mailing_template_id, mailingTemplateId) && !seenConflictEmails.has(email)) {
+      seenConflictEmails.add(email);
+      conflicts.push({
+        email: recipient.email,
+        recipientId: recipient.id,
+        currentTemplateId: recipient.mailing_template_id,
+        currentTemplateName: recipient.mailing_template_name || 'Ручной ввод',
+        nextTemplateId: mailingTemplateId,
+      });
+    }
+  }
+
+  const res = await query(
+    `INSERT INTO recipient_import_drafts (user_id, file_name, mailing_template_id, rows, conflicts)
+     VALUES ($1, $2, $3, $4::jsonb, $5::jsonb) RETURNING id`,
+    [userId, fileName || null, mailingTemplateId, JSON.stringify(uniqueRows), JSON.stringify(conflicts)]
+  );
+  return {
+    id: res.rows[0].id,
+    conflicts,
+    existingEmails: existingByEmail.size,
+    duplicateRows: rows.length - uniqueRows.length,
+  };
+}
+
+async function getRecipientImportDraft(id, userId, client = null) {
+  const dbClient = client || pool;
+  const res = await dbClient.query(
+    `SELECT d.*, t.name AS mailing_template_name
+     FROM recipient_import_drafts d
+     LEFT JOIN templates t ON t.id = d.mailing_template_id
+     WHERE d.id = $1 AND d.user_id = $2
+       AND d.created_at >= clock_timestamp() - INTERVAL '24 hours'`,
+    [id, userId]
+  );
+  return res.rows[0] || null;
+}
+
+async function confirmRecipientImport(draftId, userId, decisions = {}) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const result = { imported: 0, updated: 0, linked: 0 };
+    const draft = await getRecipientImportDraft(draftId, userId, client);
+    if (!draft) throw new Error('Черновик импорта не найден или устарел');
+
+    const conflicts = Array.isArray(draft.conflicts) ? draft.conflicts : [];
+    const skipEmails = conflicts
+      .filter((conflict) => decisions[conflict.email] !== 'replace_template')
+      .map((conflict) => conflict.email);
+    const replaceEmails = conflicts
+      .filter((conflict) => decisions[conflict.email] === 'replace_template')
+      .map((conflict) => conflict.email);
+    const result = await addRecipients(draft.rows, userId, {
+      client,
+      assignTemplate: true,
+      mailingTemplateId: draft.mailing_template_id,
+      skipEmails,
+      replaceEmails,
+    });
+    await client.query('DELETE FROM recipient_import_drafts WHERE id = $1 AND user_id = $2', [draftId, userId]);
+    await client.query('COMMIT');
+    return { ...result, conflicts: conflicts.length };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function addRecipients(rows, userId, options = {}) {
+  const client = options.client || await pool.connect();
+  const ownsTransaction = !options.client;
+  const mailingTemplateId = options.assignTemplate ? (options.mailingTemplateId ?? null) : undefined;
+  const skipEmails = new Set((options.skipEmails || []).map(normalizeRecipientEmail));
+  const replaceEmails = new Set((options.replaceEmails || []).map(normalizeRecipientEmail));
+  try {
+    if (ownsTransaction) await client.query('BEGIN');
+    const result = { imported: 0, updated: 0, linked: 0, skipped: 0 };
     for (const row of rows) {
-      const email = String(row.email || row['e-mail'] || row['почта'] || '').trim();
-      if (!email) continue;
+      const email = String(getRecipientRowEmail(row) || '').trim();
+      const normalizedEmail = normalizeRecipientEmail(email);
+      if (!email || skipEmails.has(normalizedEmail)) {
+        if (skipEmails.has(normalizedEmail)) result.skipped++;
+        continue;
+      }
 
       const organization = row.organization || row.организация || row.company || row.компания || row.org || '';
       const comment = row.comment || row.комментарий || '';
@@ -273,7 +437,7 @@ async function addRecipients(rows, userId) {
       const managerName = String(row.manager_name || row['фио руководителя'] || row.руководитель || '').trim();
       const direction = row.direction || row.направление || row['наименование направления'] || '';
       const organizationPhone = row.organization_phone || row['телефон организации'] || row.телефон_организации || '';
-      const inn = normalizeInn(row.inn || row.инн || '');
+      const inn = normalizeInn(row.inn || row.инн || row['инн организации'] || row.инн_организации || '');
       const exists = await client.query('SELECT * FROM recipients WHERE LOWER(TRIM(email)) = LOWER($1) ORDER BY id LIMIT 1 FOR UPDATE', [email]);
       let recipient;
 
@@ -283,6 +447,9 @@ async function addRecipients(rows, userId) {
         if (managerName) updates.manager_name = managerName;
         if (position) updates.position = position;
         if (inn) updates.inn = inn;
+        if (mailingTemplateId !== undefined && (sameMailingTemplate(recipient.mailing_template_id, mailingTemplateId) || replaceEmails.has(normalizedEmail))) {
+          updates.mailing_template_id = mailingTemplateId;
+        }
         const changed = await recordRecipientChanges(client, recipient, updates, userId, 'Запись изменена при импорте Excel');
         const values = Object.values(updates);
         const fields = Object.keys(updates).map((key, index) => `${key} = $${index + 1}`);
@@ -296,9 +463,9 @@ async function addRecipients(rows, userId) {
         if (changed) result.updated++;
       } else {
         const saved = await client.query(
-          `INSERT INTO recipients (email, organization, comment, extra, organization_address, position, manager_name, direction, organization_phone, inn, imported_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, clock_timestamp()) RETURNING *`,
-          [email, organization, comment, JSON.stringify(row), organizationAddress, position, managerName, direction, organizationPhone, inn]
+          `INSERT INTO recipients (email, organization, comment, extra, organization_address, position, manager_name, direction, organization_phone, inn, mailing_template_id, imported_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, clock_timestamp()) RETURNING *`,
+          [email, organization, comment, JSON.stringify(row), organizationAddress, position, managerName, direction, organizationPhone, inn, mailingTemplateId === undefined ? null : mailingTemplateId]
         );
         recipient = saved.rows[0];
         result.imported++;
@@ -306,18 +473,21 @@ async function addRecipients(rows, userId) {
       const link = await syncRecipientOrganization(client, recipient, userId);
       if (link.linkedNow) result.linked++;
     }
-    await client.query('COMMIT');
+    if (ownsTransaction) await client.query('COMMIT');
     return result;
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (ownsTransaction) await client.query('ROLLBACK');
     throw err;
   } finally {
-    client.release();
+    if (ownsTransaction) client.release();
   }
 }
 
 async function createRecipient(data, userId) {
-  const { email, organization, comment, organization_address, position, manager_name, direction, organization_phone, inn } = data;
+  const {
+    email, organization, comment, organization_address, position,
+    manager_name, direction, organization_phone, inn, mailing_template_id
+  } = data;
   if (!email) throw new Error('Email обязателен');
 
   const client = await pool.connect();
@@ -325,10 +495,11 @@ async function createRecipient(data, userId) {
     await client.query('BEGIN');
     const exists = await client.query('SELECT id FROM recipients WHERE LOWER(TRIM(email)) = LOWER($1)', [String(email).trim()]);
     if (exists.rows.length > 0) throw new Error('Получатель с таким email уже существует');
+    const mailingTemplateId = await resolveMailingTemplateId(client, mailing_template_id);
     const res = await client.query(
-      `INSERT INTO recipients (email, organization, comment, organization_address, position, manager_name, direction, organization_phone, inn, imported_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, clock_timestamp()) RETURNING *`,
-      [String(email).trim(), organization || '', comment || '', organization_address || '', position || '', manager_name || '', direction || '', organization_phone || '', normalizeInn(inn)]
+      `INSERT INTO recipients (email, organization, comment, organization_address, position, manager_name, direction, organization_phone, inn, mailing_template_id, imported_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, clock_timestamp()) RETURNING *`,
+      [String(email).trim(), organization || '', comment || '', organization_address || '', position || '', manager_name || '', direction || '', organization_phone || '', normalizeInn(inn), mailingTemplateId]
     );
     const recipient = res.rows[0];
     const link = await syncRecipientOrganization(client, recipient, userId);
@@ -376,9 +547,14 @@ async function updateRecipient(id, updates, userId) {
     const filtered = Object.keys(updates)
       .filter(key => Object.prototype.hasOwnProperty.call(RECIPIENT_FIELDS, key) && updates[key] !== undefined)
       .reduce((obj, key) => {
-        obj[key] = key === 'inn' ? normalizeInn(updates[key]) : updates[key];
+        if (key === 'inn') obj[key] = normalizeInn(updates[key]);
+        else if (key === 'mailing_template_id') obj[key] = updates[key];
+        else obj[key] = updates[key];
         return obj;
       }, {});
+    if (Object.prototype.hasOwnProperty.call(filtered, 'mailing_template_id')) {
+      filtered.mailing_template_id = await resolveMailingTemplateId(client, filtered.mailing_template_id);
+    }
     const changed = await recordRecipientChanges(client, recipient, filtered, userId, 'Запись отредактирована');
     const values = Object.values(filtered);
     const fields = Object.keys(filtered).map((key, index) => `${key} = $${index + 1}`);
@@ -2137,6 +2313,9 @@ module.exports = {
   getRecipients,
   addRecipients,
   createRecipient,
+  createRecipientImportDraft,
+  getRecipientImportDraft,
+  confirmRecipientImport,
   getRecipientsByIds,
   getDistinctOrganizations,
   countRecipients,

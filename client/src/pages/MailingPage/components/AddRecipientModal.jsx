@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import api from '../../../api';
+import { AppContext } from '../../../context/AppContext';
 
 const FIELDS = [
   { key: 'email', label: 'Email*', required: true },
@@ -13,9 +14,11 @@ const FIELDS = [
 ];
 
 const AddRecipientModal = ({ onClose, onSaved }) => {
-  const [formData, setFormData] = useState(
-    FIELDS.reduce((acc, f) => { acc[f.key] = ''; return acc; }, {})
-  );
+  const { templates } = useContext(AppContext);
+  const [formData, setFormData] = useState(() => ({
+    ...FIELDS.reduce((acc, f) => { acc[f.key] = ''; return acc; }, {}),
+    mailing_template_id: 'manual',
+  }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -100,6 +103,19 @@ const AddRecipientModal = ({ onClose, onSaved }) => {
                 />
               </div>
             ))}
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#4b5563' }}>
+                Вид рассылки
+              </label>
+              <select
+                value={formData.mailing_template_id}
+                onChange={(e) => handleChange('mailing_template_id', e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #d9e0e8', borderRadius: '6px', fontSize: '14px' }}
+              >
+                <option value="manual">Ручной ввод</option>
+                {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
+              </select>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '22px', justifyContent: 'flex-end' }}>
