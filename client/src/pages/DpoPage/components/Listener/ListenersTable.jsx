@@ -43,13 +43,13 @@ const ListenersTable = ({ listeners, onRowClick, onEdit, onDelete, onAddToGroup,
             </th>
             <th>ФИО</th>
             <th>Организация</th>
-            <th>Дата рождения</th>
-            <th>СНИЛС</th>
-            <th>Email</th>
-            <th>Телефон</th>
-            <th>ВО/СПО</th>
+            <th style={{ textAlign: 'center' }}>Дата рождения</th>
+            <th style={{ textAlign: 'center' }}>СНИЛС</th>
+            <th style={{ textAlign: 'center' }}>Email</th>
+            <th style={{ textAlign: 'center' }}>Телефон</th>
+            <th style={{ textAlign: 'center' }}>ВО/СПО</th>
             <th>Менеджер</th>
-            <th>Подразделение</th>
+            <th style={{ textAlign: 'center' }}>Подразделение</th>
             <th style={{ textAlign: 'center' }}>Действия</th>
           </tr>
         </thead>
@@ -73,13 +73,13 @@ const ListenersTable = ({ listeners, onRowClick, onEdit, onDelete, onAddToGroup,
               </td>
               <td>{`${l.last_name} ${l.first_name} ${l.middle_name || ''}`}</td>
               <td>{l.organization_name || '—'}</td>
-              <td>{formatDate(l.birth_date)}</td>
-              <td>{l.snils || '—'}</td>
-              <td>{l.email || '—'}</td>
-              <td>{l.phone || '—'}</td>
-              <td>{formatEducation(l.education_level)}</td>
+              <td style={{ textAlign: 'center' }}>{formatDate(l.birth_date)}</td>
+              <td style={{ textAlign: 'center' }}>{l.snils || '—'}</td>
+              <td style={{ textAlign: 'center' }}>{l.email || '—'}</td>
+              <td style={{ textAlign: 'center' }}>{l.phone || '—'}</td>
+              <td style={{ textAlign: 'center' }}>{formatEducation(l.education_level)}</td>
               <td>{l.manager_name || '—'}</td>
-              <td>{l.department || '—'}</td>
+              <td style={{ textAlign: 'center' }}>{l.department || '—'}</td>
               <td style={{ textAlign: 'center' }}>
                 <ActionDropdown
                   onEdit={(e) => {

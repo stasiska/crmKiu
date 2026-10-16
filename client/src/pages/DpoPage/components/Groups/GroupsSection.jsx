@@ -24,6 +24,7 @@ const GroupsSection = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [viewingGroup, setViewingGroup] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [toast, setToast] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [exporting, setExporting] = useState(false);
@@ -55,6 +56,12 @@ const GroupsSection = () => {
       Object.keys(params).forEach(key => {
         if (params[key] === '' || params[key] === null || params[key] === undefined) delete params[key];
       });
+
+      // Если есть выбранные записи, экспортируем только их
+      if (selectedIds.length > 0) {
+        params.ids = selectedIds.join(',');
+      }
+
       const blob = await exportGroups(params);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -96,16 +103,29 @@ const GroupsSection = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
         <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Группы</h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {selectedIds.length > 0 && (
+            <span style={{ fontSize: '13px', color: '#6b7280', marginRight: '8px' }}>
+              Выбрано: <strong>{selectedIds.length}</strong>
+            </span>
+          )}
           <button onClick={handleExport} className="btn btn-kiu" disabled={exporting}>
-            {exporting ? 'Формирование...' : 'Выгрузить в Excel'}
+            {exporting ? 'Формирование...' : selectedIds.length > 0 ? `Выгрузить выбранные (${selectedIds.length})` : 'Выгрузить в Excel'}
           </button>
           <button onClick={handleAdd} className="btn btn-kiu">+ Создать группу</button>
         </div>
       </div>
 
       <GroupsFilters filters={filters} onFilterChange={setFilters} />
-      <GroupsTable groups={groups} onRowClick={handleRowClick} onEdit={handleEdit} onDelete={handleDelete} loading={groupsLoading} />
+      <GroupsTable
+        groups={groups}
+        onRowClick={handleRowClick}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        loading={groupsLoading}
+        selectedIds={selectedIds}
+        onToggleSelect={setSelectedIds}
+      />
 
       <Pagination
         currentPage={groupsPagination.page}

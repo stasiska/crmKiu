@@ -1402,10 +1402,20 @@ async function deleteOrganizationNote(id, organizationId) {
 // ===== GROUPS =====
 
 function buildGroupsFilter(filters = {}) {
-  const { search, manager_id, status, format, hours_min, hours_max } = filters;
+  const { search, manager_id, status, format, hours_min, hours_max, ids } = filters;
   const whereClauses = [];
   const values = [];
   let paramIndex = 1;
+
+  if (ids) {
+    const idArray = Array.isArray(ids) ? ids : String(ids).split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+    if (idArray.length > 0) {
+      const placeholders = idArray.map((_, i) => `$${paramIndex + i}`).join(', ');
+      whereClauses.push(`g.id IN (${placeholders})`);
+      values.push(...idArray);
+      paramIndex += idArray.length;
+    }
+  }
 
   if (search) {
     whereClauses.push(`(g.name ILIKE $${paramIndex} OR g.course_name ILIKE $${paramIndex})`);
