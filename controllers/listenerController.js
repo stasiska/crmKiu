@@ -36,7 +36,7 @@ async function createListener(req, res) {
     // Преобразование пустых строк в null для необязательных полей
     const nullableFields = ['organization_id', 'birth_date', 'middle_name',
       'gender', 'citizenship', 'identity_document', 'document_series', 'document_number',
-      'issued_by', 'snils', 'residence_city', 'residence_street', 'residence_house', 'residence_apartment',
+      'issued_by', 'document_department_code', 'document_issue_date', 'snils', 'residence_city', 'residence_street', 'residence_house', 'residence_apartment',
       'registration_city', 'registration_street', 'registration_house', 'registration_apartment',
       'phone', 'email', 'education_level', 'education_series', 'education_number'];
 
@@ -96,7 +96,7 @@ async function updateListener(req, res) {
     // Преобразование пустых строк в null для необязательных полей
     const nullableFields = ['organization_id', 'birth_date', 'middle_name',
       'gender', 'citizenship', 'identity_document', 'document_series', 'document_number',
-      'issued_by', 'snils', 'residence_city', 'residence_street', 'residence_house', 'residence_apartment',
+      'issued_by', 'document_department_code', 'document_issue_date', 'snils', 'residence_city', 'residence_street', 'residence_house', 'residence_apartment',
       'registration_city', 'registration_street', 'registration_house', 'registration_apartment',
       'phone', 'email', 'education_level', 'education_series', 'education_number'];
 

@@ -55,8 +55,8 @@ const ListenersFilters = ({ filters, onFilterChange, onReset }) => {
           style={{ padding: '6px 10px', border: '1px solid #d9e0e8', borderRadius: '6px', minWidth: '150px' }}
         >
           <option value="">Все</option>
-          <option value="higher">Высшее</option>
-          <option value="secondary">СПО</option>
+          <option value="higher">Высшее образование</option>
+          <option value="secondary">Среднее профессиональное образование</option>
           <option value="basic">Аттестат</option>
         </select>
       </div>

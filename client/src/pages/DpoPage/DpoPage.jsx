@@ -7,7 +7,7 @@ const DpoPage = () => {
   const [activeTab, setActiveTab] = useState('listeners');
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: '0 20px 20px' }}>
       <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '20px' }}>
         Слушатели, организации и группы
       </h1>

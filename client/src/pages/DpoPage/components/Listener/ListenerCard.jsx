@@ -250,6 +250,8 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
                 <Field label="Серия" value={listener.document_series} />
                 <Field label="Номер" value={listener.document_number} />
                 <Field label="Выдан" value={listener.issued_by} />
+                <Field label="Код подразделения" value={listener.document_department_code} />
+                <Field label="Дата выдачи" value={formatDate(listener.document_issue_date)} />
                 <Field label="СНИЛС" value={listener.snils} />
               </Section>
 
@@ -268,7 +270,7 @@ const ListenerCard = ({ listener, onClose, onEdit, onDelete, onOpenOrganization 
               </Section>
 
               <Section title="Образование">
-                <Field label="Уровень" value={listener.education_level === 'higher' ? 'Высшее' : listener.education_level === 'secondary' ? 'СПО' : listener.education_level === 'basic' ? 'Аттестат' : '—'} />
+                <Field label="Уровень" value={listener.education_level === 'higher' ? 'Высшее образование' : listener.education_level === 'secondary' ? 'Среднее профессиональное образование' : listener.education_level === 'basic' ? 'Аттестат' : '—'} />
                 <Field label="Серия документа" value={listener.education_series} />
                 <Field label="Номер документа" value={listener.education_number} />
               </Section>

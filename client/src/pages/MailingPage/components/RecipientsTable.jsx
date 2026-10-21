@@ -165,7 +165,6 @@ const RecipientsTable = ({ onRemind }) => {
                 <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} />
               </th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Email</th>
-              <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Вид рассылки</th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Организация</th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Адрес организации</th>
               <th style={{ padding: '12px 10px', borderBottom: '1px solid #dfe5ec', fontSize: '11px', fontWeight: 700, textAlign: 'left' }}>Должность</th>
@@ -202,7 +201,6 @@ const RecipientsTable = ({ onRemind }) => {
                       />
                     </td>
                     <td style={{ padding: '11px 10px' }}>{r.email}</td>
-                    <td style={{ padding: '11px 10px' }}>{r.mailing_template_name || 'Ручной ввод'}</td>
                     <td style={{ padding: '11px 10px' }}>{r.organization || ''}</td>
                     <td style={{ padding: '11px 10px' }}>{r.organization_address || ''}</td>
                     <td style={{ padding: '11px 10px' }}>{r.position || ''}</td>

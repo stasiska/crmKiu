@@ -27,6 +27,13 @@ const listenerSchema = Joi.object({
   document_series: Joi.string().max(20).optional().allow('', null).default(null),
   document_number: Joi.string().max(20).optional().allow('', null).default(null),
   issued_by: Joi.string().max(255).optional().allow('', null).default(null),
+  document_department_code: Joi.string().max(20).optional().allow('', null).default(null),
+  document_issue_date: Joi.alternatives().try(
+    Joi.date().iso(),
+    Joi.string().valid('').allow(null)
+  ).optional().default(null).messages({
+    'date.format': 'Дата выдачи документа должна быть в формате ISO (YYYY-MM-DD)',
+  }),
   snils: Joi.alternatives().try(
     Joi.string().pattern(/^\d{3}-\d{3}-\d{3} \d{2}$/),
     Joi.string().valid('').allow(null)
@@ -83,6 +90,13 @@ const updateListenerSchema = Joi.object({
   document_series: Joi.string().max(20).optional().allow('', null).default(null),
   document_number: Joi.string().max(20).optional().allow('', null).default(null),
   issued_by: Joi.string().max(255).optional().allow('', null).default(null),
+  document_department_code: Joi.string().max(20).optional().allow('', null).default(null),
+  document_issue_date: Joi.alternatives().try(
+    Joi.date().iso(),
+    Joi.string().valid('').allow(null)
+  ).optional().default(null).messages({
+    'date.format': 'Дата выдачи документа должна быть в формате ISO (YYYY-MM-DD)',
+  }),
   snils: Joi.alternatives().try(
     Joi.string().pattern(/^\d{3}-\d{3}-\d{3} \d{2}$/),
     Joi.string().valid('').allow(null)

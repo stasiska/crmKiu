@@ -148,6 +148,14 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
               <input name="issued_by" defaultValue={initialData?.issued_by || ''} required className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
             <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Код подразделения</label>
+              <input name="document_department_code" defaultValue={initialData?.document_department_code || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дата выдачи документа</label>
+              <input type="date" name="document_issue_date" defaultValue={initialData?.document_issue_date ? new Date(initialData.document_issue_date).toISOString().split('T')[0] : ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
+            </div>
+            <div>
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>СНИЛС *</label>
               <input name="snils" defaultValue={initialData?.snils || ''} required placeholder="XXX-XXX-XXX YY" className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
             </div>
@@ -203,8 +211,8 @@ const ListenerModal = ({ onClose, onSuccess, initialData }) => {
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Уровень образования</label>
               <select name="education_level" defaultValue={initialData?.education_level || ''} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }}>
                 <option value="">Не указано</option>
-                <option value="higher">Высшее</option>
-                <option value="secondary">СПО</option>
+                <option value="higher">Высшее образование</option>
+                <option value="secondary">Среднее профессиональное образование</option>
                 <option value="basic">Аттестат</option>
               </select>
             </div>

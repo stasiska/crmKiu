@@ -86,20 +86,6 @@ async function runMigrations(pool) {
       )
     `);
 
-        // Таблица черновиков импорта получателей
-        await client.query(`
-      CREATE TABLE IF NOT EXISTS recipient_import_drafts (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        file_name VARCHAR(255),
-        mailing_template_id INTEGER REFERENCES templates(id) ON DELETE SET NULL,
-        rows JSONB NOT NULL,
-        conflicts JSONB NOT NULL DEFAULT '[]'::jsonb,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_recipient_import_drafts_created_at ON recipient_import_drafts(created_at)`);
         await client.query(`
       CREATE TABLE IF NOT EXISTS reminders (
         id SERIAL PRIMARY KEY,
@@ -493,12 +479,6 @@ async function runMigrations(pool) {
       END $$;
     `);
 
-        // Добавляем связь получателя с видом рассылки
-        await client.query(`
-          ALTER TABLE recipients
-          ADD COLUMN IF NOT EXISTS mailing_template_id INTEGER REFERENCES templates(id) ON DELETE SET NULL
-        `);
-
         // Добавляем новые поля реквизитов юридических лиц
         await client.query(`
           ALTER TABLE organizations
@@ -523,7 +503,9 @@ async function runMigrations(pool) {
       ADD COLUMN IF NOT EXISTS registration_city VARCHAR(100),
       ADD COLUMN IF NOT EXISTS registration_street VARCHAR(255),
       ADD COLUMN IF NOT EXISTS registration_house VARCHAR(50),
-      ADD COLUMN IF NOT EXISTS registration_apartment VARCHAR(50)
+      ADD COLUMN IF NOT EXISTS registration_apartment VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS document_department_code VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS document_issue_date DATE
     `);
 
     // Миграция: добавление attachments в templates
@@ -553,6 +535,14 @@ async function runMigrations(pool) {
           ALTER TABLE recipients DROP COLUMN specialization;
         END IF;
       END $$;
+    `);
+
+        // Удаление устаревшей связи получателей с шаблонами рассылок
+        await client.query(`
+      DROP TABLE IF EXISTS recipient_import_drafts
+    `);
+        await client.query(`
+      ALTER TABLE recipients DROP COLUMN IF EXISTS mailing_template_id
     `);
 
         // Вставка дефолтного администратора, если его нет

@@ -4,8 +4,6 @@ import { AppContext } from '../../../context/AppContext';
 const EmailForm = () => {
   const {
     templates,
-    recipients,
-    selectedRecipientIds,
     selectedTemplateId,
     setSelectedTemplateId,
     subject,
@@ -42,25 +40,6 @@ const EmailForm = () => {
   const selectedTemplateName = templates.find(
     (template) => String(template.id) === String(selectedTemplateId)
   )?.name;
-
-  const selectedRecipients = recipients.filter((recipient) =>
-    selectedRecipientIds.includes(recipient.id)
-  );
-  const selectedTemplateIds = [...new Set(
-    selectedRecipients
-      .map((recipient) => recipient.mailing_template_id)
-      .filter((templateId) => templateId !== null && templateId !== undefined && templateId !== '')
-      .map(String)
-  )];
-  const hasManualRecipient = selectedRecipients.some(
-    (recipient) => recipient.mailing_template_id === null || recipient.mailing_template_id === undefined
-  );
-
-  const selectedRecipientsHint = selectedTemplateIds.length > 1 || (hasManualRecipient && selectedTemplateIds.length)
-    ? 'Выбраны получатели с разными видами рассылки. Выберите шаблон вручную.'
-    : selectedTemplateName
-      ? `Шаблон «${selectedTemplateName}» выбран. Его можно изменить вручную.`
-      : 'Для записей «Ручной ввод» заполните тему и тело письма вручную.';
 
   return (
     <div className="dashboard-card" style={{
@@ -149,7 +128,7 @@ const EmailForm = () => {
             ))}
           </select>
           <small style={{ display: 'block', marginTop: '6px', color: selectedTemplateName ? '#16845b' : '#6b7280', fontSize: '12px' }}>
-            {selectedRecipientsHint}
+            {selectedTemplateName ? `Выбран шаблон «${selectedTemplateName}». Его можно изменить вручную.` : 'Выберите шаблон или заполните тему и тело письма вручную.'}
           </small>
         </div>
 

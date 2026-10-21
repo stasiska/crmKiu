@@ -40,10 +40,6 @@ const OrganizationsTable = ({ organizations, onRowClick, onEdit, onDelete, loadi
                     if (e) e.stopPropagation();
                     alert('Печать в разработке');
                   }}
-                  onAddToGroup={(e) => {
-                    if (e) e.stopPropagation();
-                    alert('Добавление в группу в разработке');
-                  }}
                   onContract={(e) => {
                     if (e) e.stopPropagation();
                     alert('Формирование договора в разработке');

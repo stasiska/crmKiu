@@ -6,8 +6,8 @@ const ListenersTable = ({ listeners, onRowClick, onEdit, onDelete, onAddToGroup,
 
   const formatEducation = (level) => {
     if (!level) return '—';
-    if (level === 'higher') return 'ВО';
-    if (level === 'secondary') return 'СПО';
+    if (level === 'higher') return 'Высшее образование';
+    if (level === 'secondary') return 'Среднее профессиональное образование';
     if (level === 'basic') return 'Аттестат';
     return level;
   };
@@ -42,13 +42,13 @@ const ListenersTable = ({ listeners, onRowClick, onEdit, onDelete, onAddToGroup,
               />
             </th>
             <th>ФИО</th>
-            <th>Организация</th>
+            <th style={{ textAlign: 'center' }}>Организация</th>
             <th style={{ textAlign: 'center' }}>Дата рождения</th>
             <th style={{ textAlign: 'center' }}>СНИЛС</th>
             <th style={{ textAlign: 'center' }}>Email</th>
             <th style={{ textAlign: 'center' }}>Телефон</th>
             <th style={{ textAlign: 'center' }}>ВО/СПО</th>
-            <th>Менеджер</th>
+            <th style={{ textAlign: 'center' }}>Менеджер</th>
             <th style={{ textAlign: 'center' }}>Подразделение</th>
             <th style={{ textAlign: 'center' }}>Действия</th>
           </tr>
@@ -72,13 +72,13 @@ const ListenersTable = ({ listeners, onRowClick, onEdit, onDelete, onAddToGroup,
                 />
               </td>
               <td>{`${l.last_name} ${l.first_name} ${l.middle_name || ''}`}</td>
-              <td>{l.organization_name || '—'}</td>
+              <td style={{ textAlign: 'center' }}>{l.organization_name || '—'}</td>
               <td style={{ textAlign: 'center' }}>{formatDate(l.birth_date)}</td>
               <td style={{ textAlign: 'center' }}>{l.snils || '—'}</td>
               <td style={{ textAlign: 'center' }}>{l.email || '—'}</td>
               <td style={{ textAlign: 'center' }}>{l.phone || '—'}</td>
               <td style={{ textAlign: 'center' }}>{formatEducation(l.education_level)}</td>
-              <td>{l.manager_name || '—'}</td>
+              <td style={{ textAlign: 'center' }}>{l.manager_name || '—'}</td>
               <td style={{ textAlign: 'center' }}>{l.department || '—'}</td>
               <td style={{ textAlign: 'center' }}>
                 <ActionDropdown
