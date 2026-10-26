@@ -35,10 +35,6 @@ const groupSchema = Joi.object({
   }),
   manager_name: Joi.string().max(255).allow(null, '').messages({
     'string.max': 'ФИО менеджера не может быть длиннее 255 символов'
-  }),
-  course_price: Joi.number().min(0).allow(null).messages({
-    'number.base': 'Стоимость курса должна быть числом',
-    'number.min': 'Стоимость курса не может быть отрицательной'
   })
 });
 
@@ -76,10 +72,6 @@ const updateGroupSchema = Joi.object({
   }),
   manager_name: Joi.string().max(255).allow(null, '').messages({
     'string.max': 'ФИО менеджера не может быть длиннее 255 символов'
-  }),
-  course_price: Joi.number().min(0).allow(null).messages({
-    'number.base': 'Стоимость курса должна быть числом',
-    'number.min': 'Стоимость курса не может быть отрицательной'
   })
 });
 
@@ -92,8 +84,22 @@ const addListenersSchema = Joi.object({
   })
 });
 
+const updateGroupListenerSchema = Joi.object({
+  contract_amount: Joi.number().min(0).allow(null).messages({
+    'number.base': 'Сумма по договору должна быть числом',
+    'number.min': 'Сумма по договору не может быть отрицательной'
+  }),
+  paid_amount: Joi.number().min(0).allow(null).messages({
+    'number.base': 'Оплаченная сумма должна быть числом',
+    'number.min': 'Оплаченная сумма не может быть отрицательной'
+  }),
+  payment_type: Joi.string().max(50).allow(null, ''),
+  comment: Joi.string().allow(null, '')
+}).min(1);
+
 module.exports = {
   groupSchema,
   updateGroupSchema,
-  addListenersSchema
+  addListenersSchema,
+  updateGroupListenerSchema
 };

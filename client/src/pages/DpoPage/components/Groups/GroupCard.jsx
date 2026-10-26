@@ -2,13 +2,23 @@ import React, { useState } from 'react';
 import GroupListenersList from './GroupListenersList';
 import GroupDocumentsSection from './GroupDocumentsSection';
 import OrderGenerationModal from './OrderGenerationModal';
+import { fetchGroup } from '../../../../api';
 import Toast from '../../../../components/Toast';
 
 const GroupCard = ({ group, onClose, onEdit, onDelete }) => {
   const [activeTab, setActiveTab] = useState('info');
+  const [displayedGroup, setDisplayedGroup] = useState(group);
   const [toast, setToast] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [refreshDocuments, setRefreshDocuments] = useState(0);
+
+  const refreshGroup = async () => {
+    try {
+      setDisplayedGroup(await fetchGroup(group.id));
+    } catch (err) {
+      setToast({ message: 'Не удалось обновить данные группы: ' + err.message, type: 'error' });
+    }
+  };
 
   const Section = ({ title, children }) => (
     <div style={{ marginBottom: '20px' }}>
@@ -29,10 +39,10 @@ const GroupCard = ({ group, onClose, onEdit, onDelete }) => {
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-content" style={{ maxWidth: '900px', background: '#fff', padding: '28px 32px', borderRadius: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div className="modal-content" style={{ width: 'min(1200px, 100%)', maxWidth: '1200px', background: '#fff', padding: '28px 32px', borderRadius: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Карточка группы</h3>
-          <span style={{ fontSize: '14px', color: '#6b7280' }}>{group.course_name}</span>
+          <span style={{ fontSize: '14px', color: '#6b7280' }}>{displayedGroup.course_name}</span>
         </div>
 
         <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #e5e7eb', marginBottom: '20px' }}>
@@ -86,11 +96,11 @@ const GroupCard = ({ group, onClose, onEdit, onDelete }) => {
         {activeTab === 'info' && (
           <div>
             <Section title="Основная информация">
-              <Field label="Наименование" value={group.course_name} />
-              <Field label="Менеджер" value={group.manager_name} />
-              <Field label="Подразделение" value={group.branch} />
-              <Field label="Аудитория" value={group.auditorium} />
-              <Field label="Стоимость курса" value={group.course_price ? `${parseFloat(group.course_price).toFixed(2)} ₽` : '—'} />
+              <Field label="Наименование" value={displayedGroup.course_name} />
+              <Field label="Менеджер" value={displayedGroup.manager_name} />
+              <Field label="Подразделение" value={displayedGroup.branch} />
+              <Field label="Аудитория" value={displayedGroup.auditorium} />
+              <Field label="Итого стоимость группы" value={`${Number(displayedGroup.total_contract_amount || 0).toFixed(2)} ₽`} />
             </Section>
 
             <Section title="Детали курса">
@@ -102,30 +112,30 @@ const GroupCard = ({ group, onClose, onEdit, onDelete }) => {
                     borderRadius: '4px',
                     fontSize: '12px',
                     fontWeight: 500,
-                    background: group.status === 'открыта' ? '#dcfce7' : group.status === 'завершена' ? '#f3f4f6' : '#fef3c7',
-                    color: group.status === 'открыта' ? '#166534' : group.status === 'завершена' ? '#6b7280' : '#92400e'
+                    background: displayedGroup.status === 'открыта' ? '#dcfce7' : displayedGroup.status === 'завершена' ? '#f3f4f6' : '#fef3c7',
+                    color: displayedGroup.status === 'открыта' ? '#166534' : displayedGroup.status === 'завершена' ? '#6b7280' : '#92400e'
                   }}>
-                    {group.status || 'набор'}
+                    {displayedGroup.status || 'набор'}
                   </span>
                 }
               />
-              <Field label="Формат обучения" value={group.format} />
-              <Field label="Часы" value={group.hours != null && group.hours !== '' ? `${group.hours} ч` : '—'} />
-              <Field label="Количество слушателей" value={group.listeners_count || 0} />
+              <Field label="Формат обучения" value={displayedGroup.format} />
+              <Field label="Часы" value={displayedGroup.hours != null && displayedGroup.hours !== '' ? `${displayedGroup.hours} ч` : '—'} />
+              <Field label="Количество слушателей" value={displayedGroup.listeners_count || 0} />
               <Field
                 label="Дата начала"
-                value={group.start_date ? new Date(group.start_date).toLocaleDateString('ru-RU') : '—'}
+                value={displayedGroup.start_date ? new Date(displayedGroup.start_date).toLocaleDateString('ru-RU') : '—'}
               />
               <Field
                 label="Дата окончания"
-                value={group.end_date ? new Date(group.end_date).toLocaleDateString('ru-RU') : '—'}
+                value={displayedGroup.end_date ? new Date(displayedGroup.end_date).toLocaleDateString('ru-RU') : '—'}
               />
             </Section>
           </div>
         )}
 
         {activeTab === 'listeners' && (
-          <GroupListenersList groupId={group.id} />
+          <GroupListenersList groupId={displayedGroup.id} onParticipantsChanged={refreshGroup} />
         )}
 
         {activeTab === 'documents' && (
@@ -145,7 +155,7 @@ const GroupCard = ({ group, onClose, onEdit, onDelete }) => {
         )}
 
         <div style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-          <button onClick={onEdit} className="btn btn-kiu">Редактировать</button>
+          <button onClick={onEdit} className="btn btn-kiu">Редактировать информацию</button>
           <button onClick={onDelete} style={{ background: '#c0392b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>Удалить</button>
           <button onClick={onClose} style={{ background: '#e5e7eb', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>Закрыть</button>
         </div>

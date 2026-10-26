@@ -23,7 +23,7 @@ function buildGroupsExcel(rows) {
       .map((date) => date ? new Date(date).toLocaleDateString('ru-RU') : '—')
       .join(' — '),
     'Аудитория/Дистант': group.auditorium || group.format || '',
-    'Количество слушателей': Number(group.listeners_count || 0),
+    'Итого стоимость группы': Number(group.total_contract_amount || 0),
     'Менеджер': group.manager_name || '',
     'Подразделение': group.branch || '',
   }));

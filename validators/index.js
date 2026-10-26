@@ -23,7 +23,7 @@ const { taskSchema, updateTaskSchema } = require('./taskValidator');
 const { organizationSchema, updateOrganizationSchema } = require('./organizationValidator');
 const { listenerSchema, updateListenerSchema } = require('./listenerValidator');
 const { noteSchema, updateNoteSchema } = require('./organizationNoteValidator');
-const { groupSchema, updateGroupSchema, addListenersSchema } = require('./groupValidator');
+const { groupSchema, updateGroupSchema, addListenersSchema, updateGroupListenerSchema } = require('./groupValidator');
 
 module.exports = {
   validate,
@@ -48,4 +48,5 @@ module.exports = {
   groupSchema,
   updateGroupSchema,
   addListenersSchema,
+  updateGroupListenerSchema,
 };

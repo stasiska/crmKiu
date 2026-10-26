@@ -2,6 +2,11 @@ const db = require('../db');
 const { buildGroupsExcel } = require('../services/excelService');
 
 function parseGroupFilters(query) {
+  const ids = String(query.ids || '')
+    .split(',')
+    .map(id => parseInt(id.trim(), 10))
+    .filter(id => Number.isInteger(id) && id > 0);
+
   return {
     search: query.search,
     manager_id: query.manager_id ? parseInt(query.manager_id, 10) : undefined,
@@ -9,6 +14,7 @@ function parseGroupFilters(query) {
     format: query.format,
     hours_min: query.hours_min !== undefined && query.hours_min !== '' ? parseInt(query.hours_min, 10) : undefined,
     hours_max: query.hours_max !== undefined && query.hours_max !== '' ? parseInt(query.hours_max, 10) : undefined,
+    ids: ids.length ? ids : undefined,
   };
 }
 
@@ -48,14 +54,14 @@ exports.getGroup = async (req, res, next) => {
 
 exports.createGroup = async (req, res, next) => {
   try {
-    ['manager_id', 'auditorium', 'branch', 'hours', 'start_date', 'end_date', 'manager_name', 'course_price'].forEach((field) => {
+    ['manager_id', 'auditorium', 'branch', 'hours', 'start_date', 'end_date', 'manager_name'].forEach((field) => {
       if (req.body[field] === '') req.body[field] = null;
     });
-    const { manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name, course_price } = req.body;
+    const { manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name } = req.body;
     if (manager_id && !await db.getUserById(manager_id)) {
       return res.status(400).json({ error: 'Менеджер с указанным ID не найден' });
     }
-    const id = await db.createGroup({ manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name, course_price });
+    const id = await db.createGroup({ manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name });
     res.status(201).json(await db.getGroupById(id));
   } catch (err) {
     next(err);
@@ -65,7 +71,7 @@ exports.createGroup = async (req, res, next) => {
 exports.updateGroup = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    ['manager_id', 'auditorium', 'branch', 'hours', 'start_date', 'end_date', 'manager_name', 'course_price'].forEach((field) => {
+    ['manager_id', 'auditorium', 'branch', 'hours', 'start_date', 'end_date', 'manager_name'].forEach((field) => {
       if (req.body[field] === '') req.body[field] = null;
     });
     if (!await db.getGroupById(id)) return res.status(404).json({ error: 'Группа не найдена' });

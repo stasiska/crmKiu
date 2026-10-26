@@ -69,6 +69,7 @@ const {
   groupSchema,
   updateGroupSchema,
   addListenersSchema,
+  updateGroupListenerSchema,
 } = require('../validators');
 
 const recipientCtrl = require('../controllers/recipientController');
@@ -435,7 +436,7 @@ router.get('/groups/:groupId/listeners', groupListenerCtrl.getListeners);
 router.post('/groups/:groupId/listeners', validate(addListenersSchema), groupListenerCtrl.addListeners);
 router.delete('/groups/:groupId/listeners/:listenerId', groupListenerCtrl.removeListener);
 router.delete('/groups/:groupId/listeners', groupListenerCtrl.clearListeners);
-router.put('/groups/:groupId/listeners/:listenerId', groupCtrl.updateGroupListener);
+router.put('/groups/:groupId/listeners/:listenerId', validate(updateGroupListenerSchema), groupCtrl.updateGroupListener);
 
 // ===== Заметки слушателей =====
 const listenerNoteCtrl = require('../controllers/listenerNoteController');

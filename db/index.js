@@ -1307,7 +1307,8 @@ function buildGroupsFilter(filters = {}) {
 const GROUPS_SELECT = `
   SELECT g.*,
     u.name as manager_name,
-    (SELECT COUNT(*) FROM group_listeners gl WHERE gl.group_id = g.id) as listeners_count
+    (SELECT COUNT(*) FROM group_listeners gl WHERE gl.group_id = g.id) as listeners_count,
+    COALESCE((SELECT SUM(gl.contract_amount) FROM group_listeners gl WHERE gl.group_id = g.id), 0) as total_contract_amount
   FROM groups g
   LEFT JOIN users u ON g.manager_id = u.id
 `;
@@ -1343,7 +1344,8 @@ async function getGroupById(id) {
   const res = await query(
     `SELECT g.*,
      u.name as manager_name,
-     (SELECT COUNT(*) FROM group_listeners gl WHERE gl.group_id = g.id) as listeners_count
+     (SELECT COUNT(*) FROM group_listeners gl WHERE gl.group_id = g.id) as listeners_count,
+     COALESCE((SELECT SUM(gl.contract_amount) FROM group_listeners gl WHERE gl.group_id = g.id), 0) as total_contract_amount
      FROM groups g
      LEFT JOIN users u ON g.manager_id = u.id
      WHERE g.id = $1`,
@@ -1355,11 +1357,11 @@ async function getGroupById(id) {
 async function createGroup(data) {
   const {
     manager_id, auditorium, branch,
-    course_name, status, hours, start_date, end_date, format, manager_name, course_price
+    course_name, status, hours, start_date, end_date, format, manager_name
   } = data;
   const res = await query(
-    `INSERT INTO groups (manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name, course_price)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+    `INSERT INTO groups (manager_id, auditorium, branch, course_name, status, hours, start_date, end_date, format, manager_name)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
     [
       manager_id || null,
       auditorium || null,
@@ -1370,8 +1372,7 @@ async function createGroup(data) {
       start_date || null,
       end_date || null,
       format || 'аудитория',
-      manager_name || null,
-      course_price || null
+      manager_name || null
     ]
   );
   return res.rows[0].id;
@@ -1379,7 +1380,7 @@ async function createGroup(data) {
 
 const ALLOWED_GROUP_FIELDS = [
   'manager_id', 'auditorium', 'branch',
-  'course_name', 'status', 'hours', 'start_date', 'end_date', 'format', 'manager_name', 'course_price'
+  'course_name', 'status', 'hours', 'start_date', 'end_date', 'format', 'manager_name'
 ];
 
 async function updateGroup(id, updates) {

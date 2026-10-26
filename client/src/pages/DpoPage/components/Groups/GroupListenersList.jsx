@@ -7,7 +7,7 @@ import Toast from '../../../../components/Toast';
 import ConfirmModal from '../../../../components/ConfirmModal';
 import './GroupListenersList.css';
 
-const GroupListenersList = ({ groupId }) => {
+const GroupListenersList = ({ groupId, onParticipantsChanged }) => {
   const [listeners, setListeners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
@@ -59,6 +59,7 @@ const GroupListenersList = ({ groupId }) => {
           await removeListenerFromGroup(groupId, listenerId);
           setToast({ message: 'Удалено', type: 'success' });
           loadListeners(pagination.page, pagination.limit);
+          onParticipantsChanged?.();
         } catch (err) {
           setToast({ message: 'Ошибка: ' + err.message, type: 'error' });
         }
@@ -71,6 +72,7 @@ const GroupListenersList = ({ groupId }) => {
   const handleAddSuccess = () => {
     setShowAddModal(false);
     loadListeners(1, pagination.limit);
+    onParticipantsChanged?.();
     setToast({ message: 'Слушатели добавлены', type: 'success' });
   };
 
@@ -87,6 +89,7 @@ const GroupListenersList = ({ groupId }) => {
       setShowFinanceModal(false);
       setSelectedListener(null);
       loadListeners(pagination.page, pagination.limit);
+      onParticipantsChanged?.();
     } catch (err) {
       setToast({ message: 'Ошибка: ' + err.message, type: 'error' });
     }
@@ -129,8 +132,8 @@ const GroupListenersList = ({ groupId }) => {
                   <td>{l.organization_name || '—'}</td>
                   <td>{l.phone || '—'}</td>
                   <td>{l.email || '—'}</td>
-                  <td>{l.contract_amount ? `${parseFloat(l.contract_amount).toFixed(2)} ₽` : '—'}</td>
-                  <td>{l.paid_amount ? `${parseFloat(l.paid_amount).toFixed(2)} ₽` : '—'}</td>
+                  <td>{l.contract_amount !== null && l.contract_amount !== undefined && l.contract_amount !== '' ? `${parseFloat(l.contract_amount).toFixed(2)} ₽` : '—'}</td>
+                  <td>{l.paid_amount !== null && l.paid_amount !== undefined && l.paid_amount !== '' ? `${parseFloat(l.paid_amount).toFixed(2)} ₽` : '—'}</td>
                   <td>{l.payment_type || '—'}</td>
                   <td style={{ textAlign: 'center', position: 'relative' }}>
                     <button
@@ -147,7 +150,7 @@ const GroupListenersList = ({ groupId }) => {
                           onClick={() => handleEditFinance(l)}
                         >
                           <span className="menu-icon">💰</span>
-                          Редактировать финансы
+                          Редактировать сумму по договору
                         </button>
                         <button
                           className="menu-item delete"

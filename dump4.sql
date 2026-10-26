@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 2RjTtQwMlVOV9gO9nsuOiMNKAuSHXmviGghWnmCPcOjoKgCezlW2cn8RgCpEHXy
+\restrict P2ezx380sJPiP1zrNmrabvvuYD6eoGMCPzZ3bwYYML0OzWt3LqAWFGA4xgiMHZK
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -1060,10 +1060,10 @@ COPY public.group_listeners (id, group_id, listener_id, joined_at, contract_amou
 14	4	5	2026-09-08 13:29:35.257702	\N	0.00	\N	\N
 16	4	3	2026-09-09 09:08:22.119988	\N	0.00	\N	\N
 18	5	3	2026-09-10 16:52:25.901034	\N	0.00	\N	\N
-19	5	5	2026-09-10 16:52:25.901034	\N	0.00	\N	\N
 20	6	3	2026-09-11 13:12:57.149779	\N	0.00	\N	\N
 24	6	5	2026-09-15 13:27:22.438216	10000.00	20000.00	физлицо	\N
 29	6	6	2026-09-17 15:03:05.496007	\N	0.00	\N	\N
+30	5	5	2026-10-23 16:35:19.670682	434.00	0.00	\N	\N
 \.
 
 
@@ -1253,7 +1253,7 @@ COPY public.users (id, email, password_hash, name, role, created_at, branch) FRO
 -- Name: branches_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.branches_id_seq', 273, true);
+SELECT pg_catalog.setval('public.branches_id_seq', 282, true);
 
 
 --
@@ -1281,7 +1281,7 @@ SELECT pg_catalog.setval('public.group_documents_id_seq', 11, true);
 -- Name: group_listeners_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.group_listeners_id_seq', 29, true);
+SELECT pg_catalog.setval('public.group_listeners_id_seq', 30, true);
 
 
 --
@@ -1379,7 +1379,7 @@ SELECT pg_catalog.setval('public.templates_id_seq', 3, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 174, true);
+SELECT pg_catalog.setval('public.users_id_seq', 177, true);
 
 
 --
@@ -1985,5 +1985,5 @@ ALTER TABLE ONLY public.tasks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 2RjTtQwMlVOV9gO9nsuOiMNKAuSHXmviGghWnmCPcOjoKgCezlW2cn8RgCpEHXy
+\unrestrict P2ezx380sJPiP1zrNmrabvvuYD6eoGMCPzZ3bwYYML0OzWt3LqAWFGA4xgiMHZK
 

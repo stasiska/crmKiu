@@ -17,7 +17,6 @@ const GroupModal = ({ onClose, onSuccess, initialData }) => {
     end_date: '',
     format: 'аудитория',
     manager_name: '',
-    course_price: '',
   });
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -36,7 +35,6 @@ const GroupModal = ({ onClose, onSuccess, initialData }) => {
         end_date: initialData.end_date || '',
         format: initialData.format || 'аудитория',
         manager_name: initialData.manager_name || '',
-        course_price: initialData.course_price || '',
       });
     }
     setFormKey(prev => prev + 1);
@@ -59,7 +57,6 @@ const GroupModal = ({ onClose, onSuccess, initialData }) => {
       if (payload.start_date === '') delete payload.start_date;
       if (payload.end_date === '') delete payload.end_date;
       if (payload.manager_name === '') delete payload.manager_name;
-      if (payload.course_price === '') delete payload.course_price;
       if (isEdit) await updateGroup(initialData.id, payload);
       else await createGroup(payload);
       onSuccess();
@@ -130,7 +127,7 @@ const GroupModal = ({ onClose, onSuccess, initialData }) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дата начала</label>
               <input name="start_date" type="date" value={form.start_date} onChange={handleChange} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
@@ -138,10 +135,6 @@ const GroupModal = ({ onClose, onSuccess, initialData }) => {
             <div>
               <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Дата окончания</label>
               <input name="end_date" type="date" value={form.end_date} onChange={handleChange} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>Стоимость курса (₽)</label>
-              <input name="course_price" type="number" min="0" step="0.01" value={form.course_price} onChange={handleChange} className="form-control" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #d9e0e8' }} placeholder="0.00" />
             </div>
           </div>
 

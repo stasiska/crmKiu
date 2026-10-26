@@ -406,7 +406,7 @@ function buildListenerContractData(listener, group, groupListenerData, options) 
   const startDate = group.start_date ? new Date(group.start_date) : new Date();
   const endDate = group.end_date ? new Date(group.end_date) : new Date();
 
-  const price = groupListenerData?.contract_amount || group.course_price || 0;
+  const price = groupListenerData?.contract_amount ?? 0;
 
   // Преобразование формата обучения
   const studyForm = formatStudyForm(group.format);

@@ -12,8 +12,8 @@ const GroupListenerFinanceModal = ({ isOpen, onClose, listener, onSave }) => {
   useEffect(() => {
     if (listener) {
       setFormData({
-        contract_amount: listener.contract_amount || '',
-        paid_amount: listener.paid_amount || '',
+        contract_amount: listener.contract_amount ?? '',
+        paid_amount: listener.paid_amount ?? '',
         payment_type: listener.payment_type || '',
         comment: listener.listener_comment || ''
       });
@@ -24,8 +24,8 @@ const GroupListenerFinanceModal = ({ isOpen, onClose, listener, onSave }) => {
     e.preventDefault();
 
     const dataToSave = {
-      contract_amount: formData.contract_amount ? parseFloat(formData.contract_amount) : null,
-      paid_amount: formData.paid_amount ? parseFloat(formData.paid_amount) : null,
+      contract_amount: formData.contract_amount === '' ? null : parseFloat(formData.contract_amount),
+      paid_amount: formData.paid_amount === '' ? null : parseFloat(formData.paid_amount),
       payment_type: formData.payment_type || null,
       comment: formData.comment || null
     };
