@@ -12,7 +12,7 @@ async function runMigrations(pool) {
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         name VARCHAR(100),
-        role VARCHAR(50) DEFAULT 'user',
+        role VARCHAR(255) DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -21,7 +21,7 @@ async function runMigrations(pool) {
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL,
+        type VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
         link VARCHAR(255),
         is_read BOOLEAN DEFAULT FALSE,
@@ -50,7 +50,7 @@ async function runMigrations(pool) {
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(100),
-        phone VARCHAR(50),
+        phone VARCHAR(255),
         city VARCHAR(100),
         organization VARCHAR(100),
         specialization VARCHAR(100),
@@ -68,7 +68,7 @@ async function runMigrations(pool) {
         sender_id INTEGER REFERENCES senders(id) ON DELETE SET NULL,
         subject VARCHAR(255),
         body_preview TEXT,
-        status VARCHAR(50),
+        status VARCHAR(255),
         error_message TEXT,
         sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -105,7 +105,7 @@ async function runMigrations(pool) {
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         description TEXT,
-        status VARCHAR(50) DEFAULT 'todo',
+        status VARCHAR(255) DEFAULT 'todo',
         assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
         deadline TIMESTAMP,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -131,7 +131,7 @@ async function runMigrations(pool) {
     name VARCHAR(255) NOT NULL,
     address TEXT,
     email VARCHAR(255),
-    phone VARCHAR(50),
+    phone VARCHAR(255),
     contact_person VARCHAR(255),
     manager_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     department VARCHAR(100),
@@ -187,7 +187,7 @@ async function runMigrations(pool) {
     snils VARCHAR(14),
     residence_address TEXT,
     registration_address TEXT,
-    phone VARCHAR(50),
+    phone VARCHAR(255),
     email VARCHAR(255) UNIQUE,
     education_level VARCHAR(20),
     education_series VARCHAR(20),
@@ -204,7 +204,7 @@ async function runMigrations(pool) {
   CREATE TABLE IF NOT EXISTS organization_notes (
     id SERIAL PRIMARY KEY,
     organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('note')),
+    type VARCHAR(255) NOT NULL CHECK (type IN ('note')),
     date TIMESTAMP,
     note TEXT NOT NULL,
     executor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -222,11 +222,11 @@ async function runMigrations(pool) {
     auditorium VARCHAR(100),
     branch VARCHAR(100),
     course_name VARCHAR(255) NOT NULL,
-    status VARCHAR(50) DEFAULT 'набор',
+    status VARCHAR(255) DEFAULT 'набор',
     hours INTEGER,
     start_date DATE,
     end_date DATE,
-    format VARCHAR(50) DEFAULT 'аудитория',
+    format VARCHAR(255) DEFAULT 'аудитория',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
@@ -271,7 +271,7 @@ async function runMigrations(pool) {
           ALTER TABLE groups ADD COLUMN course_name VARCHAR(255) NOT NULL DEFAULT '';
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='groups' AND column_name='status') THEN
-          ALTER TABLE groups ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'набор';
+          ALTER TABLE groups ADD COLUMN status VARCHAR(255) NOT NULL DEFAULT 'набор';
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='groups' AND column_name='hours') THEN
           ALTER TABLE groups ADD COLUMN hours INTEGER;
@@ -283,7 +283,7 @@ async function runMigrations(pool) {
           ALTER TABLE groups ADD COLUMN end_date DATE;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='groups' AND column_name='format') THEN
-          ALTER TABLE groups ADD COLUMN format VARCHAR(50) DEFAULT 'аудитория';
+          ALTER TABLE groups ADD COLUMN format VARCHAR(255) DEFAULT 'аудитория';
         END IF;
       END $$;
     `);
@@ -322,7 +322,7 @@ async function runMigrations(pool) {
         await client.query(`
       CREATE TABLE IF NOT EXISTS branches (
         id SERIAL PRIMARY KEY,
-        code VARCHAR(50) NOT NULL UNIQUE,
+        code VARCHAR(255) NOT NULL UNIQUE,
         name VARCHAR(255) NOT NULL,
         director_name VARCHAR(255),
         city VARCHAR(100),
@@ -343,7 +343,7 @@ async function runMigrations(pool) {
         await client.query(`
       CREATE TABLE IF NOT EXISTS document_templates (
         id SERIAL PRIMARY KEY,
-        code VARCHAR(50) NOT NULL UNIQUE,
+        code VARCHAR(255) NOT NULL UNIQUE,
         name VARCHAR(255) NOT NULL,
         description TEXT,
         file_data BYTEA NOT NULL,
@@ -391,7 +391,7 @@ async function runMigrations(pool) {
           ALTER TABLE group_listeners ADD COLUMN paid_amount DECIMAL(10,2) DEFAULT 0;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='group_listeners' AND column_name='payment_type') THEN
-          ALTER TABLE group_listeners ADD COLUMN payment_type VARCHAR(50);
+          ALTER TABLE group_listeners ADD COLUMN payment_type VARCHAR(255);
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='group_listeners' AND column_name='comment') THEN
           ALTER TABLE group_listeners ADD COLUMN comment TEXT;
@@ -414,7 +414,7 @@ async function runMigrations(pool) {
       CREATE TABLE IF NOT EXISTS listener_notes (
         id SERIAL PRIMARY KEY,
         listener_id INTEGER NOT NULL REFERENCES listeners(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL CHECK (type IN ('note')),
+        type VARCHAR(255) NOT NULL CHECK (type IN ('note')),
         date TIMESTAMP,
         note TEXT NOT NULL,
         executor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -433,7 +433,7 @@ async function runMigrations(pool) {
         id SERIAL PRIMARY KEY,
         listener_id INTEGER NOT NULL REFERENCES listeners(id) ON DELETE CASCADE,
         group_id INTEGER REFERENCES groups(id) ON DELETE SET NULL,
-        document_type VARCHAR(50) NOT NULL,
+        document_type VARCHAR(255) NOT NULL,
         file_name VARCHAR(255) NOT NULL,
         file_path VARCHAR(500) NOT NULL,
         file_size INTEGER,
@@ -468,7 +468,7 @@ async function runMigrations(pool) {
           ALTER TABLE recipients ADD COLUMN direction VARCHAR(255);
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='organization_phone') THEN
-          ALTER TABLE recipients ADD COLUMN organization_phone VARCHAR(50);
+          ALTER TABLE recipients ADD COLUMN organization_phone VARCHAR(255);
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='inn') THEN
           ALTER TABLE recipients ADD COLUMN inn VARCHAR(12);
@@ -498,12 +498,12 @@ async function runMigrations(pool) {
       ALTER TABLE listeners
       ADD COLUMN IF NOT EXISTS residence_city VARCHAR(100),
       ADD COLUMN IF NOT EXISTS residence_street VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS residence_house VARCHAR(50),
-      ADD COLUMN IF NOT EXISTS residence_apartment VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS residence_house VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS residence_apartment VARCHAR(255),
       ADD COLUMN IF NOT EXISTS registration_city VARCHAR(100),
       ADD COLUMN IF NOT EXISTS registration_street VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS registration_house VARCHAR(50),
-      ADD COLUMN IF NOT EXISTS registration_apartment VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS registration_house VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS registration_apartment VARCHAR(255),
       ADD COLUMN IF NOT EXISTS document_department_code VARCHAR(20),
       ADD COLUMN IF NOT EXISTS document_issue_date DATE
     `);
@@ -544,6 +544,32 @@ async function runMigrations(pool) {
         await client.query(`
       ALTER TABLE recipients DROP COLUMN IF EXISTS mailing_template_id
     `);
+
+        // Увеличение ограничений длины строковых полей с 50 до 255
+        await client.query(`
+          DO $$
+          BEGIN
+            ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(255);
+            ALTER TABLE notifications ALTER COLUMN type TYPE VARCHAR(255);
+            ALTER TABLE send_logs ALTER COLUMN status TYPE VARCHAR(255);
+            ALTER TABLE tasks ALTER COLUMN status TYPE VARCHAR(255);
+            ALTER TABLE organizations ALTER COLUMN phone TYPE VARCHAR(255);
+            ALTER TABLE listeners ALTER COLUMN phone TYPE VARCHAR(255);
+            ALTER TABLE organization_notes ALTER COLUMN type TYPE VARCHAR(255);
+            ALTER TABLE groups ALTER COLUMN status TYPE VARCHAR(255);
+            ALTER TABLE groups ALTER COLUMN format TYPE VARCHAR(255);
+            ALTER TABLE branches ALTER COLUMN code TYPE VARCHAR(255);
+            ALTER TABLE document_templates ALTER COLUMN code TYPE VARCHAR(255);
+            ALTER TABLE group_listeners ALTER COLUMN payment_type TYPE VARCHAR(255);
+            ALTER TABLE listener_notes ALTER COLUMN type TYPE VARCHAR(255);
+            ALTER TABLE listener_documents ALTER COLUMN document_type TYPE VARCHAR(255);
+            ALTER TABLE recipients ALTER COLUMN organization_phone TYPE VARCHAR(255);
+            ALTER TABLE listeners ALTER COLUMN residence_house TYPE VARCHAR(255);
+            ALTER TABLE listeners ALTER COLUMN residence_apartment TYPE VARCHAR(255);
+            ALTER TABLE listeners ALTER COLUMN registration_house TYPE VARCHAR(255);
+            ALTER TABLE listeners ALTER COLUMN registration_apartment TYPE VARCHAR(255);
+          END $$;
+        `);
 
         // Вставка дефолтного администратора, если его нет
         await client.query(`

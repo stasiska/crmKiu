@@ -2,8 +2,12 @@
 ALTER TABLE group_listeners
 ADD COLUMN IF NOT EXISTS contract_amount DECIMAL(10,2),
 ADD COLUMN IF NOT EXISTS paid_amount DECIMAL(10,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS payment_type VARCHAR(50),
+ADD COLUMN IF NOT EXISTS payment_type VARCHAR(255),
 ADD COLUMN IF NOT EXISTS comment TEXT;
+
+-- Обновление ограничений длины для уже существующих полей
+ALTER TABLE group_listeners
+ALTER COLUMN payment_type TYPE VARCHAR(255);
 
 -- Добавление стоимости курса в groups
 ALTER TABLE groups
@@ -14,7 +18,7 @@ ADD COLUMN IF NOT EXISTS manager_name VARCHAR(255);
 CREATE TABLE IF NOT EXISTS listener_notes (
   id SERIAL PRIMARY KEY,
   listener_id INTEGER NOT NULL REFERENCES listeners(id) ON DELETE CASCADE,
-  type VARCHAR(50) NOT NULL CHECK (type IN ('note', 'plan')),
+  type VARCHAR(255) NOT NULL CHECK (type IN ('note', 'plan')),
   date TIMESTAMP,
   note TEXT NOT NULL,
   executor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -22,6 +26,9 @@ CREATE TABLE IF NOT EXISTS listener_notes (
   file_link VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE listener_notes
+ALTER COLUMN type TYPE VARCHAR(255);
 
 -- Индексы для производительности
 CREATE INDEX IF NOT EXISTS idx_listener_notes_listener_id ON listener_notes(listener_id);

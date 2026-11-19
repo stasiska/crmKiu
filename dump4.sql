@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict U2CK9gg20x8HQ5axybohCy21Idj9pbF8VwkJPktoS8dvVRcastLLNnVZumPiNxj
+\restrict KI4UiaKgQojLVAuGQ6UUa1KnBHZvXrsBbZDh5s6odY8yujzfA1LVkP9Uol8p1JZ
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -29,7 +29,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.branches (
     id integer NOT NULL,
-    code character varying(50) NOT NULL,
+    code character varying(255) NOT NULL,
     name character varying(255) NOT NULL,
     director_name character varying(255),
     city character varying(100),
@@ -104,7 +104,7 @@ ALTER SEQUENCE public.comments_id_seq OWNED BY public.comments.id;
 
 CREATE TABLE public.document_templates (
     id integer NOT NULL,
-    code character varying(50) NOT NULL,
+    code character varying(255) NOT NULL,
     name character varying(255) NOT NULL,
     description text,
     file_data bytea NOT NULL,
@@ -190,7 +190,7 @@ CREATE TABLE public.group_listeners (
     joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     contract_amount numeric(10,2),
     paid_amount numeric(10,2) DEFAULT 0,
-    payment_type character varying(50),
+    payment_type character varying(255),
     comment text
 );
 
@@ -230,11 +230,11 @@ CREATE TABLE public.groups (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     course_name character varying(255) DEFAULT ''::character varying NOT NULL,
-    status character varying(50) DEFAULT 'набор'::character varying NOT NULL,
+    status character varying(255) DEFAULT 'набор'::character varying NOT NULL,
     hours integer,
     start_date date,
     end_date date,
-    format character varying(50) DEFAULT 'аудитория'::character varying,
+    format character varying(255) DEFAULT 'аудитория'::character varying,
     branch character varying(100),
     manager_name character varying(255),
     course_price numeric(10,2)
@@ -273,7 +273,7 @@ CREATE TABLE public.listener_documents (
     id integer NOT NULL,
     listener_id integer NOT NULL,
     group_id integer,
-    document_type character varying(50) NOT NULL,
+    document_type character varying(255) NOT NULL,
     file_name character varying(255) NOT NULL,
     file_path character varying(500) NOT NULL,
     file_size integer,
@@ -317,14 +317,14 @@ ALTER SEQUENCE public.listener_documents_id_seq OWNED BY public.listener_documen
 CREATE TABLE public.listener_notes (
     id integer NOT NULL,
     listener_id integer NOT NULL,
-    type character varying(50) NOT NULL,
+    type character varying(255) NOT NULL,
     date timestamp without time zone,
     note text NOT NULL,
     executor_id integer,
     creator_id integer NOT NULL,
     file_link character varying(255),
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT listener_notes_type_check CHECK (((type)::text = ANY ((ARRAY['note'::character varying, 'plan'::character varying])::text[])))
+    CONSTRAINT listener_notes_type_check CHECK (((type)::text = ANY (ARRAY[('note'::character varying)::text, ('plan'::character varying)::text])))
 );
 
 
@@ -371,7 +371,7 @@ CREATE TABLE public.listeners (
     snils character varying(14),
     residence_address text,
     registration_address text,
-    phone character varying(50),
+    phone character varying(255),
     email character varying(255),
     education_level character varying(20),
     education_series character varying(20),
@@ -383,12 +383,12 @@ CREATE TABLE public.listeners (
     name_accusative character varying(255),
     residence_city character varying(100),
     residence_street character varying(255),
-    residence_house character varying(50),
-    residence_apartment character varying(50),
+    residence_house character varying(255),
+    residence_apartment character varying(255),
     registration_city character varying(100),
     registration_street character varying(255),
-    registration_house character varying(50),
-    registration_apartment character varying(50),
+    registration_house character varying(255),
+    registration_apartment character varying(255),
     document_department_code character varying(20),
     document_issue_date date
 );
@@ -425,7 +425,7 @@ ALTER SEQUENCE public.listeners_id_seq OWNED BY public.listeners.id;
 CREATE TABLE public.notifications (
     id integer NOT NULL,
     user_id integer,
-    type character varying(50) NOT NULL,
+    type character varying(255) NOT NULL,
     message text NOT NULL,
     link character varying(255),
     is_read boolean DEFAULT false,
@@ -464,14 +464,14 @@ ALTER SEQUENCE public.notifications_id_seq OWNED BY public.notifications.id;
 CREATE TABLE public.organization_notes (
     id integer NOT NULL,
     organization_id integer NOT NULL,
-    type character varying(50) NOT NULL,
+    type character varying(255) NOT NULL,
     date timestamp without time zone,
     note text NOT NULL,
     executor_id integer,
     creator_id integer NOT NULL,
     file_link character varying(255),
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT organization_notes_type_check CHECK (((type)::text = ANY ((ARRAY['note'::character varying, 'plan'::character varying])::text[])))
+    CONSTRAINT organization_notes_type_check CHECK (((type)::text = ANY (ARRAY[('note'::character varying)::text, ('plan'::character varying)::text])))
 );
 
 
@@ -508,7 +508,7 @@ CREATE TABLE public.organizations (
     name character varying(255) NOT NULL,
     address text,
     email character varying(255),
-    phone character varying(50),
+    phone character varying(255),
     contact_person character varying(255),
     manager_id integer,
     department character varying(100),
@@ -570,7 +570,7 @@ CREATE TABLE public.recipients (
     "position" character varying(255),
     manager_name character varying(255),
     direction character varying(255),
-    organization_phone character varying(50),
+    organization_phone character varying(255),
     inn character varying(12),
     organization_id integer,
     updated_at timestamp without time zone
@@ -651,7 +651,7 @@ CREATE TABLE public.send_logs (
     sender_id integer,
     subject character varying(255),
     body_preview text,
-    status character varying(50),
+    status character varying(255),
     error_message text,
     sent_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
@@ -730,7 +730,7 @@ CREATE TABLE public.tasks (
     id integer NOT NULL,
     title character varying(255) NOT NULL,
     description text,
-    status character varying(50) DEFAULT 'todo'::character varying,
+    status character varying(255) DEFAULT 'todo'::character varying,
     assigned_to integer,
     deadline timestamp without time zone,
     user_id integer,
@@ -810,7 +810,7 @@ CREATE TABLE public.users (
     email character varying(255) NOT NULL,
     password_hash character varying(255) NOT NULL,
     name character varying(100),
-    role character varying(50) DEFAULT 'user'::character varying,
+    role character varying(255) DEFAULT 'user'::character varying,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     branch character varying(100)
 );
@@ -1253,7 +1253,7 @@ COPY public.users (id, email, password_hash, name, role, created_at, branch) FRO
 -- Name: branches_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.branches_id_seq', 282, true);
+SELECT pg_catalog.setval('public.branches_id_seq', 285, true);
 
 
 --
@@ -1379,7 +1379,7 @@ SELECT pg_catalog.setval('public.templates_id_seq', 3, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 177, true);
+SELECT pg_catalog.setval('public.users_id_seq', 178, true);
 
 
 --
@@ -1985,5 +1985,5 @@ ALTER TABLE ONLY public.tasks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict U2CK9gg20x8HQ5axybohCy21Idj9pbF8VwkJPktoS8dvVRcastLLNnVZumPiNxj
+\unrestrict KI4UiaKgQojLVAuGQ6UUa1KnBHZvXrsBbZDh5s6odY8yujzfA1LVkP9Uol8p1JZ
 

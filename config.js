@@ -43,7 +43,7 @@ module.exports = {
 
   rateLimit: {
     windowMs: isDev ? 60 * 60 * 1000 : 15 * 60 * 1000, // dev: 1 час, prod: 15 мин
-    max: isDev ? 1000 : 100,
+    max: 10000000, // общий лимит API на IP за одно окно
   },
 
   cors: {
