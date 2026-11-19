@@ -11,7 +11,7 @@ async function runMigrations(pool) {
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(100),
+        name VARCHAR(255),
         role VARCHAR(255) DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -33,9 +33,9 @@ async function runMigrations(pool) {
         await client.query(`
       CREATE TABLE IF NOT EXISTS senders (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(100),
+        name VARCHAR(255),
         email VARCHAR(255) NOT NULL,
-        host VARCHAR(100),
+        host VARCHAR(255),
         port INTEGER,
         secure INTEGER DEFAULT 1,
         password VARCHAR(255),
@@ -49,11 +49,11 @@ async function runMigrations(pool) {
       CREATE TABLE IF NOT EXISTS recipients (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
-        name VARCHAR(100),
+        name VARCHAR(255),
         phone VARCHAR(255),
-        city VARCHAR(100),
-        organization VARCHAR(100),
-        specialization VARCHAR(100),
+        city VARCHAR(255),
+        organization VARCHAR(255),
+        specialization VARCHAR(255),
         comment TEXT,
         extra JSONB,
         imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -78,7 +78,7 @@ async function runMigrations(pool) {
         await client.query(`
       CREATE TABLE IF NOT EXISTS templates (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(100),
+        name VARCHAR(255),
         subject VARCHAR(255),
         body TEXT,
         attachments TEXT,
@@ -134,7 +134,7 @@ async function runMigrations(pool) {
     phone VARCHAR(255),
     contact_person VARCHAR(255),
     manager_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    department VARCHAR(100),
+    department VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
 `);
@@ -144,28 +144,28 @@ async function runMigrations(pool) {
   DO $$
   BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='ogrn') THEN
-      ALTER TABLE organizations ADD COLUMN ogrn VARCHAR(15);
+      ALTER TABLE organizations ADD COLUMN ogrn VARCHAR(255);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='okpo') THEN
-      ALTER TABLE organizations ADD COLUMN okpo VARCHAR(10);
+      ALTER TABLE organizations ADD COLUMN okpo VARCHAR(255);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='okved') THEN
-      ALTER TABLE organizations ADD COLUMN okved VARCHAR(10);
+      ALTER TABLE organizations ADD COLUMN okved VARCHAR(255);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='okfs') THEN
-      ALTER TABLE organizations ADD COLUMN okfs VARCHAR(10);
+      ALTER TABLE organizations ADD COLUMN okfs VARCHAR(255);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='okopf') THEN
-      ALTER TABLE organizations ADD COLUMN okopf VARCHAR(10);
+      ALTER TABLE organizations ADD COLUMN okopf VARCHAR(255);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='okato') THEN
-      ALTER TABLE organizations ADD COLUMN okato VARCHAR(20);
+      ALTER TABLE organizations ADD COLUMN okato VARCHAR(255);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='inn') THEN
-      ALTER TABLE organizations ADD COLUMN inn VARCHAR(12);
+      ALTER TABLE organizations ADD COLUMN inn VARCHAR(255);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizations' AND column_name='kpp') THEN
-      ALTER TABLE organizations ADD COLUMN kpp VARCHAR(9);
+      ALTER TABLE organizations ADD COLUMN kpp VARCHAR(255);
     END IF;
   END $$;
 `);
@@ -174,27 +174,27 @@ async function runMigrations(pool) {
         await client.query(`
   CREATE TABLE IF NOT EXISTS listeners (
     id SERIAL PRIMARY KEY,
-    last_name VARCHAR(100) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    middle_name VARCHAR(100),
+    last_name VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    middle_name VARCHAR(255),
     birth_date DATE,
-    gender VARCHAR(10),
-    citizenship VARCHAR(100),
-    identity_document VARCHAR(100),
-    document_series VARCHAR(20),
-    document_number VARCHAR(20),
+    gender VARCHAR(255),
+    citizenship VARCHAR(255),
+    identity_document VARCHAR(255),
+    document_series VARCHAR(255),
+    document_number VARCHAR(255),
     issued_by VARCHAR(255),
-    snils VARCHAR(14),
+    snils VARCHAR(255),
     residence_address TEXT,
     registration_address TEXT,
     phone VARCHAR(255),
     email VARCHAR(255) UNIQUE,
-    education_level VARCHAR(20),
-    education_series VARCHAR(20),
-    education_number VARCHAR(20),
+    education_level VARCHAR(255),
+    education_series VARCHAR(255),
+    education_number VARCHAR(255),
     organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL,
     manager_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    department VARCHAR(100),
+    department VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
 `);
@@ -219,8 +219,8 @@ async function runMigrations(pool) {
   CREATE TABLE IF NOT EXISTS groups (
     id SERIAL PRIMARY KEY,
     manager_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    auditorium VARCHAR(100),
-    branch VARCHAR(100),
+    auditorium VARCHAR(255),
+    branch VARCHAR(255),
     course_name VARCHAR(255) NOT NULL,
     status VARCHAR(255) DEFAULT 'набор',
     hours INTEGER,
@@ -293,7 +293,7 @@ async function runMigrations(pool) {
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='branch') THEN
-          ALTER TABLE users ADD COLUMN branch VARCHAR(100);
+          ALTER TABLE users ADD COLUMN branch VARCHAR(255);
         END IF;
       END $$;
     `);
@@ -303,7 +303,7 @@ async function runMigrations(pool) {
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='groups' AND column_name='branch') THEN
-          ALTER TABLE groups ADD COLUMN branch VARCHAR(100);
+          ALTER TABLE groups ADD COLUMN branch VARCHAR(255);
         END IF;
       END $$;
     `);
@@ -325,7 +325,7 @@ async function runMigrations(pool) {
         code VARCHAR(255) NOT NULL UNIQUE,
         name VARCHAR(255) NOT NULL,
         director_name VARCHAR(255),
-        city VARCHAR(100),
+        city VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -360,7 +360,7 @@ async function runMigrations(pool) {
       CREATE TABLE IF NOT EXISTS group_documents (
         id SERIAL PRIMARY KEY,
         group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-        document_type VARCHAR(100) NOT NULL,
+        document_type VARCHAR(255) NOT NULL,
         filename VARCHAR(255) NOT NULL,
         file_data BYTEA NOT NULL,
         created_by INTEGER REFERENCES users(id),
@@ -435,9 +435,9 @@ async function runMigrations(pool) {
         group_id INTEGER REFERENCES groups(id) ON DELETE SET NULL,
         document_type VARCHAR(255) NOT NULL,
         file_name VARCHAR(255) NOT NULL,
-        file_path VARCHAR(500) NOT NULL,
+        file_path VARCHAR(255) NOT NULL,
         file_size INTEGER,
-        contract_number VARCHAR(100),
+        contract_number VARCHAR(255),
         contract_date DATE,
         customer_full_name TEXT,
         created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -456,7 +456,7 @@ async function runMigrations(pool) {
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='organization_address') THEN
-          ALTER TABLE recipients ADD COLUMN organization_address VARCHAR(500);
+          ALTER TABLE recipients ADD COLUMN organization_address VARCHAR(255);
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='position') THEN
           ALTER TABLE recipients ADD COLUMN position VARCHAR(255);
@@ -471,7 +471,7 @@ async function runMigrations(pool) {
           ALTER TABLE recipients ADD COLUMN organization_phone VARCHAR(255);
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='inn') THEN
-          ALTER TABLE recipients ADD COLUMN inn VARCHAR(12);
+          ALTER TABLE recipients ADD COLUMN inn VARCHAR(255);
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='recipients' AND column_name='organization_id') THEN
           ALTER TABLE recipients ADD COLUMN organization_id INTEGER REFERENCES organizations(id) ON DELETE SET NULL;
@@ -482,13 +482,13 @@ async function runMigrations(pool) {
         // Добавляем новые поля реквизитов юридических лиц
         await client.query(`
           ALTER TABLE organizations
-          ADD COLUMN IF NOT EXISTS full_name VARCHAR(500),
-          ADD COLUMN IF NOT EXISTS settlement_account VARCHAR(20),
+          ADD COLUMN IF NOT EXISTS full_name VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS settlement_account VARCHAR(255),
           ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255),
-          ADD COLUMN IF NOT EXISTS correspondent_account VARCHAR(20),
-          ADD COLUMN IF NOT EXISTS bik VARCHAR(9),
-          ADD COLUMN IF NOT EXISTS bank_inn VARCHAR(12),
-          ADD COLUMN IF NOT EXISTS bank_kpp VARCHAR(9)
+          ADD COLUMN IF NOT EXISTS correspondent_account VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS bik VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS bank_inn VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS bank_kpp VARCHAR(255)
         `);
 
         await client.query(`ALTER TABLE recipients ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`);
@@ -496,15 +496,15 @@ async function runMigrations(pool) {
     // Миграция: разделение адресов слушателей на отдельные поля
     await client.query(`
       ALTER TABLE listeners
-      ADD COLUMN IF NOT EXISTS residence_city VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS residence_city VARCHAR(255),
       ADD COLUMN IF NOT EXISTS residence_street VARCHAR(255),
       ADD COLUMN IF NOT EXISTS residence_house VARCHAR(255),
       ADD COLUMN IF NOT EXISTS residence_apartment VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS registration_city VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS registration_city VARCHAR(255),
       ADD COLUMN IF NOT EXISTS registration_street VARCHAR(255),
       ADD COLUMN IF NOT EXISTS registration_house VARCHAR(255),
       ADD COLUMN IF NOT EXISTS registration_apartment VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS document_department_code VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS document_department_code VARCHAR(255),
       ADD COLUMN IF NOT EXISTS document_issue_date DATE
     `);
 
@@ -545,29 +545,27 @@ async function runMigrations(pool) {
       ALTER TABLE recipients DROP COLUMN IF EXISTS mailing_template_id
     `);
 
-        // Увеличение ограничений длины строковых полей с 50 до 255
+        // Расширение существующих коротких строковых полей до 255 символов
         await client.query(`
           DO $$
+          DECLARE
+            column_record RECORD;
           BEGIN
-            ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(255);
-            ALTER TABLE notifications ALTER COLUMN type TYPE VARCHAR(255);
-            ALTER TABLE send_logs ALTER COLUMN status TYPE VARCHAR(255);
-            ALTER TABLE tasks ALTER COLUMN status TYPE VARCHAR(255);
-            ALTER TABLE organizations ALTER COLUMN phone TYPE VARCHAR(255);
-            ALTER TABLE listeners ALTER COLUMN phone TYPE VARCHAR(255);
-            ALTER TABLE organization_notes ALTER COLUMN type TYPE VARCHAR(255);
-            ALTER TABLE groups ALTER COLUMN status TYPE VARCHAR(255);
-            ALTER TABLE groups ALTER COLUMN format TYPE VARCHAR(255);
-            ALTER TABLE branches ALTER COLUMN code TYPE VARCHAR(255);
-            ALTER TABLE document_templates ALTER COLUMN code TYPE VARCHAR(255);
-            ALTER TABLE group_listeners ALTER COLUMN payment_type TYPE VARCHAR(255);
-            ALTER TABLE listener_notes ALTER COLUMN type TYPE VARCHAR(255);
-            ALTER TABLE listener_documents ALTER COLUMN document_type TYPE VARCHAR(255);
-            ALTER TABLE recipients ALTER COLUMN organization_phone TYPE VARCHAR(255);
-            ALTER TABLE listeners ALTER COLUMN residence_house TYPE VARCHAR(255);
-            ALTER TABLE listeners ALTER COLUMN residence_apartment TYPE VARCHAR(255);
-            ALTER TABLE listeners ALTER COLUMN registration_house TYPE VARCHAR(255);
-            ALTER TABLE listeners ALTER COLUMN registration_apartment TYPE VARCHAR(255);
+            FOR column_record IN
+              SELECT table_schema, table_name, column_name
+              FROM information_schema.columns
+              WHERE table_schema = 'public'
+                AND data_type = 'character varying'
+                AND character_maximum_length IS NOT NULL
+                AND character_maximum_length <> 255
+            LOOP
+              EXECUTE format(
+                'ALTER TABLE %I.%I ALTER COLUMN %I TYPE VARCHAR(255)',
+                column_record.table_schema,
+                column_record.table_name,
+                column_record.column_name
+              );
+            END LOOP;
           END $$;
         `);
 
