@@ -39,6 +39,9 @@ const uploadDocx = multer({
 
 const uploadAny = multer({
   storage: multer.memoryStorage(),
+  // Multipart filenames without an explicit charset are UTF-8 in browser uploads.
+  // Multer defaults to latin1, which corrupts Cyrillic filenames.
+  defParamCharset: 'utf8',
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB лимит
   }
