@@ -29,6 +29,8 @@ export const AppProvider = ({ children }) => {
   const [senders, setSenders] = useState([]);
   const [selectedSenderId, setSelectedSenderId] = useState(null);
   const [recipients, setRecipients] = useState([]);
+  const [recipientEmails, setRecipientEmails] = useState([]);
+  const recipientsRequestRef = useRef(0);
   const [filters, setFilters] = useState({ city: '', specialization: '', organization: '', search: '' });
   const [filtersOptions, setFiltersOptions] = useState({ cities: [], specializations: [] });
   const [recipientOrganizations, setRecipientOrganizations] = useState([]); // переименовано
@@ -83,18 +85,18 @@ export const AppProvider = ({ children }) => {
 
   // ===== Загрузка получателей с фильтрами =====
   const loadRecipients = useCallback(async () => {
-    setLoading(true);
+    const requestId = ++recipientsRequestRef.current;
     try {
       const data = await fetchRecipients(filters);
+      if (requestId !== recipientsRequestRef.current) return;
       setRecipients(data);
+      setRecipientEmails(prev => [...new Set([...prev, ...data.map(recipient => recipient.email).filter(Boolean)])]);
       const linked = data.filter(recipient => recipient.organizationLink?.linkedNow);
       if (linked.length) {
         alert(`Автоматически привязано по ИНН: ${linked.length} записей. История синхронизирована.`);
       }
     } catch (e) {
       setError('Ошибка загрузки получателей: ' + e.message);
-    } finally {
-      setLoading(false);
     }
   }, [filters]);
 
@@ -349,8 +351,15 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    loadRecipients();
-  }, [filters]);
+    const timeoutId = setTimeout(() => {
+      loadRecipients();
+    }, 250);
+
+    return () => {
+      clearTimeout(timeoutId);
+      recipientsRequestRef.current++;
+    };
+  }, [filters, loadRecipients]);
 
   // ===== Значения для провайдера =====
   const value = {
@@ -368,6 +377,7 @@ export const AppProvider = ({ children }) => {
     setFilters,
     filtersOptions,
     recipientOrganizations,        // переименовано
+    recipientEmails,
     selectedRecipientIds,
     setSelectedRecipientIds,
     isSending,

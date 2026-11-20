@@ -254,11 +254,7 @@ async function getRecipients(filters = {}) {
     idx++;
   }
   if (filters.search) {
-    sql += ` AND (r.email ILIKE $${idx}
-      OR r.organization ILIKE $${idx}
-      OR r.position ILIKE $${idx}
-      OR r.manager_name ILIKE $${idx}
-      OR r.direction ILIKE $${idx})`;
+    sql += ` AND r.email ILIKE $${idx}`;
     values.push(`%${filters.search}%`);
     idx++;
   }
