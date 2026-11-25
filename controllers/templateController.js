@@ -1,4 +1,15 @@
 const db = require('../db');
+const fs = require('fs/promises');
+const path = require('path');
+
+async function getTrainingInvitation(req, res) {
+  try {
+    const body = await fs.readFile(path.join(__dirname, '..', 'templates', 'training-invitation.html'), 'utf8');
+    res.json({ name: 'Приглашение на обучение', subject: 'Приглашение на обучение', body });
+  } catch (err) {
+    res.status(500).json({ error: 'Не удалось загрузить шаблон письма' });
+  }
+}
 
 async function getTemplates(req, res) {
   try {
@@ -51,4 +62,4 @@ async function deleteTemplate(req, res) {
   }
 }
 
-module.exports = { getTemplates, getTemplate, addTemplate, updateTemplate, deleteTemplate };
+module.exports = { getTemplates, getTemplate, getTrainingInvitation, addTemplate, updateTemplate, deleteTemplate };

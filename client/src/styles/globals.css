@@ -784,6 +784,10 @@ button {
   padding: 11px 10px;
   border-bottom: 1px solid #edf0f4;
 }
+.listeners-table td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
 .table tbody tr:hover {
   background: #f8fafc;
 }

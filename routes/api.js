@@ -266,6 +266,7 @@ emailService.on('done', emitProgress);
 // ---- Шаблоны ----
 const templateCtrl = require('../controllers/templateController');
 router.get('/templates', templateCtrl.getTemplates);
+router.get('/templates/training-invitation', templateCtrl.getTrainingInvitation);
 router.get('/templates/:id', templateCtrl.getTemplate);
 router.post('/templates', validate(templateSchema), isAdmin, templateCtrl.addTemplate);
 router.put('/templates/:id', validate(updateTemplateSchema), isAdmin, templateCtrl.updateTemplate);

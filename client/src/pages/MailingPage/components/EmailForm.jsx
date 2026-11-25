@@ -37,9 +37,9 @@ const EmailForm = () => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const selectedTemplateName = templates.find(
-    (template) => String(template.id) === String(selectedTemplateId)
-  )?.name;
+  const selectedTemplateName = selectedTemplateId === 'training-invitation'
+    ? 'Приглашение на обучение'
+    : templates.find((template) => String(template.id) === String(selectedTemplateId))?.name;
 
   return (
     <div className="dashboard-card" style={{
@@ -121,6 +121,7 @@ const EmailForm = () => {
             style={{ minHeight: '42px', border: '1px solid #d9e0e8', borderRadius: '8px', width: '100%', padding: '0 12px' }}
           >
             <option value="">-- Ручной ввод --</option>
+            <option value="training-invitation">Приглашение на обучение</option>
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -148,7 +149,7 @@ const EmailForm = () => {
           />
           <div className="textarea-hint" style={{ marginTop: '7px', color: '#6b7280', fontSize: '11px' }}>
             Доступные переменные:
-            {['email', 'name', 'city', 'specialization', 'phone', 'organization', 'organization_address', 'organization_phone', 'position', 'manager_name', 'direction'].map(v => (
+            {['email', 'name', 'city', 'specialization', 'phone', 'organization', 'organization_address', 'organization_phone', 'position', 'manager_name', 'manager_greeting', 'direction'].map(v => (
               <code key={v} style={{ display: 'inline-block', marginLeft: '4px', marginTop: '4px', padding: '2px 5px', borderRadius: '4px', background: '#eef3f9', color: '#1557a6', fontFamily: 'Consolas, monospace', fontSize: '11px' }}>{`{${v}}`}</code>
             ))}
           </div>

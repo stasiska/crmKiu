@@ -4,6 +4,19 @@ import ActionDropdown from '../../../../components/ActionDropdown';
 const GroupsTable = ({ groups, onRowClick, onEdit, onDelete, loading, selectedIds = [], onToggleSelect }) => {
   if (loading) return <div>Загрузка...</div>;
 
+  const isEndingSoon = (endDate) => {
+    if (!endDate) return false;
+
+    const end = new Date(endDate);
+    if (Number.isNaN(end.getTime())) return false;
+    end.setHours(23, 59, 59, 999);
+
+    const today = new Date();
+    const daysUntilEnd = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+
+    return daysUntilEnd >= 0 && daysUntilEnd <= 3;
+  };
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -67,7 +80,19 @@ const GroupsTable = ({ groups, onRowClick, onEdit, onDelete, loading, selectedId
                 </span>
               </td>
               <td style={{ textAlign: 'center' }}>{g.hours != null && g.hours !== '' ? `${g.hours} ч` : '—'}</td>
-              <td style={{ textAlign: 'center' }}>{`${g.start_date ? new Date(g.start_date).toLocaleDateString('ru-RU') : '—'} — ${g.end_date ? new Date(g.end_date).toLocaleDateString('ru-RU') : '—'}`}</td>
+              <td style={{ textAlign: 'center' }}>
+                <span style={isEndingSoon(g.end_date) ? {
+                  display: 'inline-block',
+                  padding: '3px 6px',
+                  border: '1px solid #d4a900',
+                  borderRadius: '4px',
+                  background: '#ffeb3b',
+                  color: '#5c4600',
+                  fontWeight: 600,
+                } : undefined}>
+                  {`${g.start_date ? new Date(g.start_date).toLocaleDateString('ru-RU') : '—'} — ${g.end_date ? new Date(g.end_date).toLocaleDateString('ru-RU') : '—'}`}
+                </span>
+              </td>
               <td style={{ textAlign: 'center' }}>{g.auditorium || g.format || '—'}</td>
               <td style={{ textAlign: 'center' }}>{g.listeners_count || 0}</td>
               <td>{g.manager_name || '—'}</td>

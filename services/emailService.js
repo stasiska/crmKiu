@@ -4,6 +4,30 @@ const config = require('../config');
 const { EventEmitter } = require('events');
 const { decrypt } = require('./encryptionService');
 const he = require('he');
+const path = require('path');
+
+const inlineImages = [
+  { cid: 'ibo-logo', filename: 'top-logo-ibo.png' },
+  { cid: 'mnipi-logo', filename: 'top-logo-mnipi.png' },
+  { cid: 'training-image', filename: '50dd1d75-faa9-48f1-811a-5906ed954c5f.jpg' },
+];
+
+function personalize(template, recipient, escapeHtml = false) {
+  return template.replace(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, key) => {
+    let value;
+    if (key === 'manager_greeting') {
+      const name = String(recipient.manager_name || '').trim();
+      value = name ? `Уважаемые(ая) ${name}!` : 'Уважаемые руководители!';
+    } else if (key === 'manager_name' && !String(recipient.manager_name || '').trim()) {
+      value = 'руководителю';
+    } else if (Object.prototype.hasOwnProperty.call(recipient, key) && recipient[key] != null && recipient[key] !== '') {
+      value = String(recipient[key]);
+    } else {
+      return match;
+    }
+    return escapeHtml ? he.encode(value) : value;
+  });
+}
 
 class EmailService extends EventEmitter {
   constructor() {
@@ -87,25 +111,8 @@ class EmailService extends EventEmitter {
         }
       }
 
-      // Персонализация с условной подстановкой
-      const html = cleanedTemplate.replace(/\{([^}]+)\}/g, (match, key) => {
-        let value = recipient[key] || match;
-        // Условная логика: если {manager_name} пустое, подставляем "руководителю"
-        if (key === 'manager_name' && (!recipient[key] || recipient[key].trim() === '')) {
-          value = 'руководителю';
-        }
-        return he.encode(String(value));
-      });
-
-      // Для subject - условная подстановка без HTML-экранирования
-      const subjectPersonalized = subject.replace(/\{([^}]+)\}/g, (match, key) => {
-        let value = recipient[key] || match;
-        // Условная логика для subject
-        if (key === 'manager_name' && (!recipient[key] || recipient[key].trim() === '')) {
-          value = 'руководителю';
-        }
-        return String(value);
-      });
+      const html = personalize(cleanedTemplate, recipient, true);
+      const subjectPersonalized = personalize(subject, recipient);
 
       try {
         const mailOptions = {
@@ -115,9 +122,15 @@ class EmailService extends EventEmitter {
           html,
         };
 
-        // Добавляем вложения если они есть
-        if (attachments && attachments.length > 0) {
-          mailOptions.attachments = attachments;
+        const embeddedImages = inlineImages
+          .filter(image => html.includes(`cid:${image.cid}`))
+          .map(image => ({
+            filename: image.filename,
+            path: path.join(__dirname, '..', 'images', image.filename),
+            cid: image.cid,
+          }));
+        if (embeddedImages.length || attachments?.length) {
+          mailOptions.attachments = [...(attachments || []), ...embeddedImages];
         }
 
         const info = await transporter.sendMail(mailOptions);

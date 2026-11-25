@@ -23,7 +23,7 @@ const ListenersTable = ({ listeners, onRowClick, onEdit, onDelete, onAddToGroup,
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table className="table listeners-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
             <th style={{ width: '40px', textAlign: 'center' }}>
