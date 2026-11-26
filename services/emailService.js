@@ -16,8 +16,9 @@ function personalize(template, recipient, escapeHtml = false) {
   return template.replace(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, key) => {
     let value;
     if (key === 'manager_greeting') {
-      const name = String(recipient.manager_name || '').trim();
-      value = name ? `Уважаемые(ая) ${name}!` : 'Уважаемые руководители!';
+      const fullName = String(recipient.manager_name || '').trim();
+      const nameWithoutSurname = fullName.split(/\s+/).slice(1).join(' ');
+      value = nameWithoutSurname ? `Добрый день, ${nameWithoutSurname}.` : 'Добрый день, коллеги.';
     } else if (key === 'manager_name' && !String(recipient.manager_name || '').trim()) {
       value = 'руководителю';
     } else if (Object.prototype.hasOwnProperty.call(recipient, key) && recipient[key] != null && recipient[key] !== '') {
