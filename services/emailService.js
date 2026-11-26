@@ -18,7 +18,7 @@ function personalize(template, recipient, escapeHtml = false) {
     if (key === 'manager_greeting') {
       const fullName = String(recipient.manager_name || '').trim();
       const nameWithoutSurname = fullName.split(/\s+/).slice(1).join(' ');
-      value = nameWithoutSurname ? `Добрый день, ${nameWithoutSurname}.` : 'Добрый день, коллеги.';
+      value = nameWithoutSurname ? `Добрый день, ${nameWithoutSurname}.` : 'Добрый день, руководители.';
     } else if (key === 'manager_name' && !String(recipient.manager_name || '').trim()) {
       value = 'руководителю';
     } else if (Object.prototype.hasOwnProperty.call(recipient, key) && recipient[key] != null && recipient[key] !== '') {
