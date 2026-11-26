@@ -10,7 +10,7 @@ const inputStyle = {
 };
 
 const Filters = () => {
-  const { filters, setFilters, recipientOrganizations, recipientEmails } = useContext(AppContext);
+  const { filters, setFilters, filtersOptions, recipientOrganizations, recipientEmails } = useContext(AppContext);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -34,6 +34,25 @@ const Filters = () => {
         <datalist id="recipient-organizations">
           {recipientOrganizations.map((o) => (
             <option key={o.organization} value={o.organization} />
+          ))}
+        </datalist>
+      </div>
+
+      <div className="filter-group">
+        <label htmlFor="filterDirection" style={{ display: 'block', marginBottom: '6px', color: '#4b5563', fontSize: '12px', fontWeight: 600 }}>Направление</label>
+        <input
+          id="filterDirection"
+          name="direction"
+          list="recipient-directions"
+          className="form-control"
+          placeholder="Введите или выберите направление"
+          value={filters.direction || ''}
+          onChange={handleFilterChange}
+          style={inputStyle}
+        />
+        <datalist id="recipient-directions">
+          {(filtersOptions.directions || []).map((direction) => (
+            <option key={direction} value={direction} />
           ))}
         </datalist>
       </div>

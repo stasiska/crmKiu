@@ -31,8 +31,8 @@ export const AppProvider = ({ children }) => {
   const [recipients, setRecipients] = useState([]);
   const [recipientEmails, setRecipientEmails] = useState([]);
   const recipientsRequestRef = useRef(0);
-  const [filters, setFilters] = useState({ city: '', specialization: '', organization: '', search: '' });
-  const [filtersOptions, setFiltersOptions] = useState({ cities: [], specializations: [] });
+  const [filters, setFilters] = useState({ city: '', specialization: '', organization: '', direction: '', search: '' });
+  const [filtersOptions, setFiltersOptions] = useState({ cities: [], specializations: [], directions: [] });
   const [recipientOrganizations, setRecipientOrganizations] = useState([]); // переименовано
   const [selectedRecipientIds, setSelectedRecipientIds] = useState([]);
   const [isSending, setIsSending] = useState(false);

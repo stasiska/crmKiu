@@ -28,6 +28,7 @@ export const fetchRecipients = (filters = {}) => {
   if (filters.city) params.append('city', filters.city);
   if (filters.specialization) params.append('specialization', filters.specialization);
   if (filters.organization) params.append('organization', filters.organization);
+  if (filters.direction) params.append('direction', filters.direction);
   if (filters.search) params.append('search', filters.search);
   const url = `/recipients?${params.toString()}`;
   return api.get(url).then(r => r.data);

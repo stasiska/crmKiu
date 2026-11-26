@@ -38,6 +38,7 @@ async function getRecipients(req, res) {
       city: req.query.city,
       specialization: req.query.specialization,
       organization: req.query.organization,
+      direction: req.query.direction,
       search: req.query.search,
     };
     const linked = await db.autoLinkRecipientsByInn(req.user.id);
@@ -56,7 +57,10 @@ async function getRecipients(req, res) {
 
 async function getFiltersOptions(req, res) {
   try {
-    res.json({ organizations: await db.getDistinctOrganizations() });
+    res.json({
+      organizations: await db.getDistinctOrganizations(),
+      directions: await db.getDistinctDirections(),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

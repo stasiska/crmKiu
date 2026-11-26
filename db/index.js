@@ -253,6 +253,11 @@ async function getRecipients(filters = {}) {
     values.push(filters.organization);
     idx++;
   }
+  if (filters.direction) {
+    sql += ` AND r.direction = $${idx}`;
+    values.push(filters.direction);
+    idx++;
+  }
   if (filters.search) {
     sql += ` AND r.email ILIKE $${idx}`;
     values.push(`%${filters.search}%`);
@@ -377,6 +382,11 @@ async function getRecipientsByIds(ids) {
 async function getDistinctOrganizations() {
   const res = await query('SELECT DISTINCT organization FROM recipients WHERE organization IS NOT NULL AND organization != \'\'');
   return res.rows.map(r => ({ organization: r.organization }));
+}
+
+async function getDistinctDirections() {
+  const res = await query("SELECT DISTINCT direction FROM recipients WHERE direction IS NOT NULL AND TRIM(direction) != '' ORDER BY direction");
+  return res.rows.map(r => r.direction);
 }
 
 async function countRecipients() {
@@ -2175,6 +2185,7 @@ module.exports = {
   createRecipient,
   getRecipientsByIds,
   getDistinctOrganizations,
+  getDistinctDirections,
   countRecipients,
   updateRecipientComment,
   updateRecipient,
